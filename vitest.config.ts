@@ -9,7 +9,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL(".", import.meta.url))
+      "@": fileURLToPath(new URL(".", import.meta.url)),
+      "@supabase/ssr": fileURLToPath(
+        new URL("./test-stubs/supabase-ssr.ts", import.meta.url)
+      )
     }
   }
 });

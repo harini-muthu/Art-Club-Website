@@ -1,7 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 
 const createBrowserClientMock = vi.fn(() => ({ client: "browser" }));
-const createServerClientMock = vi.fn(() => ({ client: "server" }));
+const createServerClientMock = vi.fn(
+  (
+    _url: string,
+    _key: string,
+    _options: {
+      cookies: {
+        getAll(): unknown[];
+        setAll(
+          cookiesToSet: {
+            name: string;
+            value: string;
+            options?: Record<string, unknown>;
+          }[]
+        ): void;
+      };
+    }
+  ) => ({ client: "server" })
+);
 const cookieStoreMock = {
   getAll: vi.fn(() => [{ name: "sb-test", value: "cookie" }]),
   set: vi.fn()

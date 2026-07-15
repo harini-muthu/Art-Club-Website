@@ -16,21 +16,25 @@ export function AdminLoginForm() {
     setError("");
     setIsSubmitting(true);
 
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    setIsSubmitting(false);
+      if (signInError) {
+        setError("That login did not work. Check the email and password.");
+        return;
+      }
 
-    if (signInError) {
-      setError("That login did not work. Check the email and password.");
-      return;
+      router.push("/admin");
+      router.refresh();
+    } catch {
+      setError("We could not sign you in right now. Try again in a moment.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    router.push("/admin");
-    router.refresh();
   }
 
   return (

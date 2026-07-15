@@ -11,6 +11,14 @@ describe("Supabase browser config", () => {
     process.env = { ...originalEnv };
   });
 
+  it("uses static public env lookups so Next.js can inline client config", () => {
+    const source = getSupabaseBrowserConfig.toString();
+
+    expect(source).toContain("process.env.NEXT_PUBLIC_SUPABASE_URL");
+    expect(source).toContain("process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+    expect(source).not.toContain("process.env[");
+  });
+
   it("reads the public Supabase URL and publishable key from env", () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL =
       "https://tomrhagnfilqfunehrzl.supabase.co";

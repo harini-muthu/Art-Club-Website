@@ -28,8 +28,7 @@ export function AdminLoginForm() {
         return;
       }
 
-      router.push("/admin");
-      router.refresh();
+      window.location.assign("/admin");
     } catch {
       setError("We could not sign you in right now. Try again in a moment.");
     } finally {

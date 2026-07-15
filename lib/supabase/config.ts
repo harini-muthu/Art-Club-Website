@@ -6,20 +6,17 @@ export type SupabaseBrowserConfig = {
 const missingConfigError =
   "Supabase environment variables are not configured.";
 
-function readEnvValue(key: string) {
-  return process.env[key]?.trim() ?? "";
-}
-
 export function hasSupabaseBrowserConfig() {
   return Boolean(
-    readEnvValue("NEXT_PUBLIC_SUPABASE_URL") &&
-      readEnvValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim()
   );
 }
 
 export function getSupabaseBrowserConfig(): SupabaseBrowserConfig {
-  const url = readEnvValue("NEXT_PUBLIC_SUPABASE_URL");
-  const publishableKey = readEnvValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+  const publishableKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ?? "";
 
   if (!url || !publishableKey) {
     throw new Error(missingConfigError);

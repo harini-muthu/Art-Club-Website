@@ -1,11 +1,36 @@
 import { describe, expect, it, vi } from "vitest";
 
 const createBrowserClientMock = vi.fn(() => ({ client: "browser" }));
-const createServerClientMock = vi.fn(() => ({ client: "server" }));
+const createServerClientMock = vi.fn(
+  (
+    _url: string,
+    _key: string,
+    _options: {
+      cookies: {
+        getAll(): unknown[];
+        setAll(
+          cookiesToSet: {
+            name: string;
+            value: string;
+            options?: Record<string, unknown>;
+          }[]
+        ): void;
+      };
+    }
+  ) => ({ client: "server" })
+);
+const cookieStoreMock = {
+  getAll: vi.fn(() => [{ name: "sb-test", value: "cookie" }]),
+  set: vi.fn()
+};
 
 vi.mock("@supabase/ssr", () => ({
   createBrowserClient: createBrowserClientMock,
   createServerClient: createServerClientMock
+}));
+
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => cookieStoreMock)
 }));
 
 describe("Supabase clients", () => {
@@ -36,7 +61,7 @@ describe("Supabase clients", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
 
     const { createClient } = await import("@/lib/supabase/server");
-    const client = createClient();
+    const client = await createClient();
 
     expect(client).toEqual({ client: "server" });
     expect(createServerClientMock).toHaveBeenCalledWith(
@@ -46,6 +71,17 @@ describe("Supabase clients", () => {
         cookies: expect.any(Object)
       })
     );
+
+    const serverOptions = createServerClientMock.mock.calls[0][2];
+    expect(serverOptions.cookies.getAll()).toEqual([
+      { name: "sb-test", value: "cookie" }
+    ]);
+    serverOptions.cookies.setAll([
+      { name: "sb-new", value: "value", options: { path: "/" } }
+    ]);
+    expect(cookieStoreMock.set).toHaveBeenCalledWith("sb-new", "value", {
+      path: "/"
+    });
 
     vi.unstubAllEnvs();
   });

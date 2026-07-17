@@ -761,6 +761,26 @@ main {
   flex: 0 0 auto;
 }
 
+.admin-notice {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-weight: 900;
+}
+
+.admin-notice.success {
+  color: #166534;
+  background: #dcfce7;
+  border-color: rgba(22, 101, 52, 0.2);
+}
+
+.admin-notice.error {
+  color: #be123c;
+  background: #fff1f2;
+  border-color: rgba(225, 29, 72, 0.25);
+}
+
 .admin-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -799,8 +819,19 @@ main {
   gap: 18px;
 }
 
+.admin-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
 .admin-panel {
   padding: 20px;
+}
+
+.admin-entry-panel {
+  align-self: start;
 }
 
 .admin-panel-heading {
@@ -824,6 +855,68 @@ main {
   max-width: 280px;
   margin: 0;
   text-align: right;
+}
+
+.admin-entry-form,
+.admin-search-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-entry-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.admin-entry-form input,
+.admin-entry-form select,
+.admin-entry-form textarea,
+.admin-search-form input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font: inherit;
+  background: #fffaf2;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.admin-entry-form textarea {
+  resize: vertical;
+}
+
+.admin-entry-form input:focus,
+.admin-entry-form select:focus,
+.admin-entry-form textarea:focus,
+.admin-search-form input:focus {
+  outline: 3px solid #f0abfc;
+  outline-offset: 2px;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-checkbox {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.admin-checkbox input {
+  width: 18px;
+  min-height: 18px;
+  padding: 0;
+}
+
+.admin-search-form {
+  grid-template-columns: minmax(160px, 1fr) auto auto;
+  align-items: center;
+  width: min(100%, 440px);
 }
 
 .admin-list {
@@ -883,6 +976,7 @@ main {
   .hero,
   .contact-layout,
   .text-grid,
+  .admin-entry-grid,
   .admin-grid {
     grid-template-columns: 1fr;
   }
@@ -894,6 +988,10 @@ main {
 
   .admin-panel-heading p {
     text-align: left;
+  }
+
+  .admin-search-form {
+    width: 100%;
   }
 
   .hero {
@@ -965,6 +1063,8 @@ main {
   }
 
   .admin-stats,
+  .admin-form-grid,
+  .admin-search-form,
   .admin-row,
   .admin-row.compact {
     grid-template-columns: 1fr;

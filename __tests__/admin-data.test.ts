@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAdminDashboardStats,
+  filterMembersBySearch,
   getMembershipStatus,
   getMemberAttendanceCount
 } from "@/lib/admin-data";
@@ -51,5 +52,29 @@ describe("admin data helpers", () => {
       calendarActivities: 1,
       attendanceRecords: 3
     });
+  });
+
+  it("filters members by name or email for officer search", () => {
+    expect(
+      filterMembersBySearch(
+        [
+          { id: "member-1", full_name: "Harini Muthu", email: "harini@example.edu" },
+          { id: "member-2", full_name: "Maya Chen", email: "maya@example.edu" }
+        ],
+        "hari"
+      )
+    ).toEqual([
+      { id: "member-1", full_name: "Harini Muthu", email: "harini@example.edu" }
+    ]);
+
+    expect(
+      filterMembersBySearch(
+        [
+          { id: "member-1", full_name: "Harini Muthu", email: "harini@example.edu" },
+          { id: "member-2", full_name: "Maya Chen", email: "maya@example.edu" }
+        ],
+        "example.edu"
+      )
+    ).toHaveLength(2);
   });
 });

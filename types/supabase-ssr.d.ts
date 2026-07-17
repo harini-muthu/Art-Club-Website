@@ -1,8 +1,10 @@
 declare module "@supabase/ssr" {
-  type SupabaseResult<T> = Promise<{
+  type SupabasePayload<T> = {
     data: T | null;
     error: { message: string } | null;
-  }>;
+  };
+
+  type SupabaseResult<T> = Promise<SupabasePayload<T>>;
 
   type CookieToSet = {
     name: string;
@@ -16,6 +18,7 @@ declare module "@supabase/ssr" {
   }>;
 
   type SupabaseQueryBuilder<T = Record<string, unknown>> = {
+    insert(row: unknown): SupabaseMutationBuilder<T>;
     select(columns: string): SupabaseQueryBuilder<T>;
     eq(column: string, value: string): SupabaseQueryBuilder<T>;
     order(
@@ -24,6 +27,11 @@ declare module "@supabase/ssr" {
     ): SupabaseListResult<T>;
     single(): SupabaseResult<T>;
   };
+
+  type SupabaseMutationBuilder<T = Record<string, unknown>> =
+    PromiseLike<SupabasePayload<T>> & {
+      select(columns: string): SupabaseQueryBuilder<T>;
+    };
 
   type SupabaseClient = {
     auth: {

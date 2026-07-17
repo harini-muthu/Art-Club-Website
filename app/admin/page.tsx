@@ -118,7 +118,7 @@ async function getAdminDashboardData() {
     supabase
       .from("meetings")
       .select(
-        "id, activity, meeting_date, starts_at, ends_at, location, show_on_calendar"
+        "id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar"
       )
       .order("meeting_date", { ascending: false }),
     supabase

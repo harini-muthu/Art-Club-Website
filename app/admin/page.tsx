@@ -1,10 +1,13 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AdminEntryForms } from "@/components/admin-entry-forms";
 import {
   AdminAttendanceRecord,
   AdminMeeting,
   AdminMember,
   AdminMembership,
   buildAdminDashboardStats,
+  filterMembersBySearch,
   getMemberAttendanceCount,
   getMembershipStatus
 } from "@/lib/admin-data";
@@ -53,6 +56,29 @@ function latestMembershipForMember(
   return memberships
     .filter((membership) => membership.member_id === memberId)
     .sort((a, b) => b.expires_on.localeCompare(a.expires_on))[0];
+}
+
+const statusMessages: Record<string, string> = {
+  "activity-added": "Activity added.",
+  "attendance-added": "Attendance recorded.",
+  "member-added": "Member and membership added."
+};
+
+const errorMessages: Record<string, string> = {
+  "activity-invalid": "Check the activity fields and try again.",
+  "activity-save-failed": "Activity could not be saved. Check Supabase policies.",
+  "attendance-invalid": "Choose a meeting and identify the attendee.",
+  "attendance-save-failed": "Attendance could not be saved. Check Supabase policies.",
+  "member-invalid": "Check the member fields and try again.",
+  "member-save-failed": "Member could not be saved. Check Supabase policies."
+};
+
+type AdminPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function firstSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 async function getAdminDashboardData() {
@@ -110,7 +136,11 @@ async function getAdminDashboardData() {
   };
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: AdminPageProps) {
+  const params = await searchParams;
+  const memberSearch = firstSearchParam(params?.memberSearch) ?? "";
+  const status = firstSearchParam(params?.status);
+  const error = firstSearchParam(params?.error);
   const {
     officerProfile,
     members,
@@ -124,6 +154,12 @@ export default async function AdminPage() {
     meetings,
     attendanceRecords
   });
+  const visibleMembers = filterMembersBySearch(members, memberSearch);
+  const dashboardMessage = status
+    ? statusMessages[status]
+    : error
+      ? errorMessages[error]
+      : null;
 
   return (
     <section className="admin-shell">
@@ -141,6 +177,12 @@ export default async function AdminPage() {
           </button>
         </form>
       </div>
+
+      {dashboardMessage ? (
+        <p className={status ? "admin-notice success" : "admin-notice error"}>
+          {dashboardMessage}
+        </p>
+      ) : null}
 
       <div className="admin-stats" aria-label="Admin summary">
         <article>
@@ -161,15 +203,33 @@ export default async function AdminPage() {
         </article>
       </div>
 
+      <AdminEntryForms members={members} meetings={meetings} />
+
       <div className="admin-grid">
         <section className="admin-panel">
           <div className="admin-panel-heading">
             <h2>Members</h2>
-            <p>Search and editing controls come next.</p>
+            <form action="/admin" className="admin-search-form" method="get">
+              <input
+                aria-label="Search members"
+                defaultValue={memberSearch}
+                name="memberSearch"
+                placeholder="Search members"
+                type="search"
+              />
+              <button className="button secondary" type="submit">
+                Search
+              </button>
+              {memberSearch ? (
+                <Link className="button secondary" href="/admin">
+                  Clear
+                </Link>
+              ) : null}
+            </form>
           </div>
-          {members.length ? (
+          {visibleMembers.length ? (
             <div className="admin-list">
-              {members.map((member) => {
+              {visibleMembers.map((member) => {
                 const membership = latestMembershipForMember(
                   member.id,
                   memberships
@@ -206,9 +266,11 @@ export default async function AdminPage() {
                 );
               })}
             </div>
+          ) : members.length ? (
+            <p className="admin-empty">No members match that search.</p>
           ) : (
             <p className="admin-empty">
-              No members yet. The next admin slice will add member creation.
+              No members yet.
             </p>
           )}
         </section>

@@ -53,6 +53,26 @@ export function getMemberAttendanceCount(
     .length;
 }
 
+export function filterMembersBySearch(
+  members: AdminMember[],
+  searchTerm: string
+) {
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+  if (!normalizedSearchTerm) {
+    return members;
+  }
+
+  return members.filter((member) => {
+    const fullName = member.full_name?.toLowerCase() ?? "";
+    const email = member.email?.toLowerCase() ?? "";
+    return (
+      fullName.includes(normalizedSearchTerm) ||
+      email.includes(normalizedSearchTerm)
+    );
+  });
+}
+
 export function buildAdminDashboardStats(
   data: AdminDashboardData,
   now: Date = new Date()

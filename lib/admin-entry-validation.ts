@@ -22,6 +22,11 @@ export type MemberSubmission = {
   };
 };
 
+export type MemberUpdateSubmission = MemberSubmission & {
+  member_id: string;
+  membership_id: string | null;
+};
+
 export type MeetingSubmission = {
   activity: string;
   meeting_date: string;
@@ -31,6 +36,10 @@ export type MeetingSubmission = {
   image_url: string | null;
   image_alt: string | null;
   show_on_calendar: boolean;
+};
+
+export type MeetingUpdateSubmission = MeetingSubmission & {
+  meeting_id: string;
 };
 
 export type AttendanceSubmission = {
@@ -146,6 +155,55 @@ export function validateMemberSubmission(
   };
 }
 
+export function validateMemberUpdateSubmission(
+  formData: FormData,
+  now: Date = new Date()
+): ValidationResult<MemberUpdateSubmission> {
+  const memberId = readField(formData, "memberId");
+  const membershipId = readField(formData, "membershipId");
+  const originalMembershipType = readField(formData, "originalMembershipType");
+  const startsOn = readField(formData, "startsOn");
+  const expiresOn = readField(formData, "expiresOn");
+  const validation = validateMemberSubmission(formData, now);
+  const fieldErrors: FieldErrors = {};
+
+  if (!memberId) {
+    fieldErrors.memberId = "Choose a member.";
+  }
+
+  if (!validation.ok || Object.keys(fieldErrors).length > 0) {
+    if (!validation.ok) {
+      Object.assign(fieldErrors, validation.fieldErrors);
+    }
+    return { ok: false, fieldErrors };
+  }
+
+  const memberData = validation.data;
+  const membershipChanged =
+    originalMembershipType &&
+    originalMembershipType !== memberData.membership.membership_type;
+  const keepExistingDates =
+    !membershipChanged && isValidDate(startsOn) && isValidDate(expiresOn);
+
+  return {
+    ok: true,
+    data: {
+      member_id: memberId,
+      membership_id: nullIfBlank(membershipId),
+      member: memberData.member,
+      membership: {
+        ...memberData.membership,
+        starts_on: keepExistingDates
+          ? startsOn
+          : memberData.membership.starts_on,
+        expires_on: keepExistingDates
+          ? expiresOn
+          : memberData.membership.expires_on
+      }
+    }
+  };
+}
+
 export function validateMeetingSubmission(
   formData: FormData
 ): ValidationResult<MeetingSubmission> {
@@ -195,6 +253,34 @@ export function validateMeetingSubmission(
       image_url: nullIfBlank(imageUrl),
       image_alt: nullIfBlank(imageAlt),
       show_on_calendar: formData.get("showOnCalendar") === "on"
+    }
+  };
+}
+
+export function validateMeetingUpdateSubmission(
+  formData: FormData
+): ValidationResult<MeetingUpdateSubmission> {
+  const meetingId = readField(formData, "meetingId");
+  const validation = validateMeetingSubmission(formData);
+  const fieldErrors: FieldErrors = {};
+
+  if (!meetingId) {
+    fieldErrors.meetingId = "Choose an activity.";
+  }
+
+  if (!validation.ok || Object.keys(fieldErrors).length > 0) {
+    if (!validation.ok) {
+      Object.assign(fieldErrors, validation.fieldErrors);
+    }
+    return { ok: false, fieldErrors };
+  }
+
+  const meetingData = validation.data;
+  return {
+    ok: true,
+    data: {
+      meeting_id: meetingId,
+      ...meetingData
     }
   };
 }

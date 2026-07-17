@@ -36,6 +36,7 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
+    "github-upload-ready",
     "node_modules"
   ]
 }

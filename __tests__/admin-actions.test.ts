@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addAttendanceRecord,
   addMeetingActivity,
-  addMemberWithMembership
+  addMemberWithMembership,
+  deleteMeetingActivity,
+  deleteMember,
+  updateMeetingActivity,
+  updateMemberWithMembership
 } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -34,8 +38,18 @@ function setupSupabaseMock() {
       single: async () => ({ data: { id: "member-1" }, error: null })
     })
   }));
+  const memberUpdateEq = vi.fn(async () => ({ error: null }));
+  const memberUpdate = vi.fn(() => ({ eq: memberUpdateEq }));
+  const memberDeleteEq = vi.fn(async () => ({ error: null }));
+  const memberDelete = vi.fn(() => ({ eq: memberDeleteEq }));
   const membershipInsert = vi.fn(async () => ({ error: null }));
+  const membershipUpdateEq = vi.fn(async () => ({ error: null }));
+  const membershipUpdate = vi.fn(() => ({ eq: membershipUpdateEq }));
   const meetingInsert = vi.fn(async () => ({ error: null }));
+  const meetingUpdateEq = vi.fn(async () => ({ error: null }));
+  const meetingUpdate = vi.fn(() => ({ eq: meetingUpdateEq }));
+  const meetingDeleteEq = vi.fn(async () => ({ error: null }));
+  const meetingDelete = vi.fn(() => ({ eq: meetingDeleteEq }));
   const attendanceInsert = vi.fn(async () => ({ error: null }));
   const memberLookup = vi.fn(() => ({
     eq: () => ({
@@ -67,17 +81,23 @@ function setupSupabaseMock() {
 
       if (table === "members") {
         return {
+          delete: memberDelete,
           insert: memberInsert,
+          update: memberUpdate,
           select: memberLookup
         };
       }
 
       if (table === "memberships") {
-        return { insert: membershipInsert };
+        return { insert: membershipInsert, update: membershipUpdate };
       }
 
       if (table === "meetings") {
-        return { insert: meetingInsert };
+        return {
+          delete: meetingDelete,
+          insert: meetingInsert,
+          update: meetingUpdate
+        };
       }
 
       if (table === "attendance_records") {
@@ -92,9 +112,19 @@ function setupSupabaseMock() {
 
   return {
     attendanceInsert,
+    meetingDelete,
+    meetingDeleteEq,
     meetingInsert,
+    meetingUpdate,
+    meetingUpdateEq,
+    memberDelete,
+    memberDeleteEq,
     memberInsert,
-    membershipInsert
+    memberUpdate,
+    memberUpdateEq,
+    membershipInsert,
+    membershipUpdate,
+    membershipUpdateEq
   };
 }
 
@@ -206,5 +236,99 @@ describe("admin data entry actions", () => {
 
     expect(memberInsert).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("updates a member and their latest membership term", async () => {
+    const { memberUpdate, memberUpdateEq, membershipUpdate, membershipUpdateEq } =
+      setupSupabaseMock();
+
+    await expect(
+      updateMemberWithMembership(
+        formData({
+          memberId: "member-1",
+          membershipId: "membership-1",
+          fullName: "Harini Muthu",
+          email: "harini@example.edu",
+          notes: "Updated note",
+          membershipType: "semester",
+          originalMembershipType: "semester",
+          startsOn: "2026-07-17",
+          expiresOn: "2026-12-31",
+          paidAmount: "15"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin?status=member-updated");
+
+    expect(memberUpdate).toHaveBeenCalledWith({
+      full_name: "Harini Muthu",
+      email: "harini@example.edu",
+      notes: "Updated note"
+    });
+    expect(memberUpdateEq).toHaveBeenCalledWith("id", "member-1");
+    expect(membershipUpdate).toHaveBeenCalledWith({
+      membership_type: "semester",
+      starts_on: "2026-07-17",
+      expires_on: "2026-12-31",
+      paid_amount: 15
+    });
+    expect(membershipUpdateEq).toHaveBeenCalledWith("id", "membership-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+  });
+
+  it("deletes a member", async () => {
+    const { memberDelete, memberDeleteEq } = setupSupabaseMock();
+
+    await expect(
+      deleteMember(formData({ memberId: "member-1" }))
+    ).rejects.toThrow("REDIRECT:/admin?status=member-deleted");
+
+    expect(memberDelete).toHaveBeenCalled();
+    expect(memberDeleteEq).toHaveBeenCalledWith("id", "member-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+  });
+
+  it("updates a meeting activity", async () => {
+    const { meetingUpdate, meetingUpdateEq } = setupSupabaseMock();
+
+    await expect(
+      updateMeetingActivity(
+        formData({
+          meetingId: "meeting-1",
+          activity: "Updated Figure Drawing",
+          meetingDate: "2026-09-09",
+          startsAt: "18:30",
+          endsAt: "20:00",
+          location: "Studio 204",
+          imageUrl: "https://example.edu/updated.jpg",
+          imageAlt: "Updated event image",
+          showOnCalendar: "on"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin?status=activity-updated");
+
+    expect(meetingUpdate).toHaveBeenCalledWith({
+      activity: "Updated Figure Drawing",
+      meeting_date: "2026-09-09",
+      starts_at: "18:30",
+      ends_at: "20:00",
+      location: "Studio 204",
+      image_url: "https://example.edu/updated.jpg",
+      image_alt: "Updated event image",
+      show_on_calendar: true
+    });
+    expect(meetingUpdateEq).toHaveBeenCalledWith("id", "meeting-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+  });
+
+  it("deletes a meeting activity", async () => {
+    const { meetingDelete, meetingDeleteEq } = setupSupabaseMock();
+
+    await expect(
+      deleteMeetingActivity(formData({ meetingId: "meeting-1" }))
+    ).rejects.toThrow("REDIRECT:/admin?status=activity-deleted");
+
+    expect(meetingDelete).toHaveBeenCalled();
+    expect(meetingDeleteEq).toHaveBeenCalledWith("id", "meeting-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin");
   });
 });

@@ -35,6 +35,7 @@ these files and folders while preserving the same folder structure.
 ## Upload These Component Files
 
 - `components/admin-entry-forms.tsx`
+- `components/confirm-submit-button.tsx`
 - `components/contact-form.tsx`
 - `components/gallery-grid.tsx`
 - `components/page-section.tsx`
@@ -78,6 +79,7 @@ these files and folders while preserving the same folder structure.
 ## Upload These Supabase SQL Files
 
 - `supabase/sql/2026-07-17-event-images-public-calendar.sql`
+- `supabase/sql/2026-07-17-admin-edit-delete-policies.sql`
 
 ## Do Not Upload These
 

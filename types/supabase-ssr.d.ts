@@ -18,6 +18,7 @@ declare module "@supabase/ssr" {
   }>;
 
   type SupabaseQueryBuilder<T = Record<string, unknown>> = {
+    delete(): SupabaseFilterBuilder<T>;
     insert(row: unknown): SupabaseMutationBuilder<T>;
     select(columns: string): SupabaseQueryBuilder<T>;
     eq(column: string, value: string): SupabaseQueryBuilder<T>;
@@ -26,6 +27,11 @@ declare module "@supabase/ssr" {
       options?: { ascending?: boolean }
     ): SupabaseListResult<T>;
     single(): SupabaseResult<T>;
+    update(row: unknown): SupabaseFilterBuilder<T>;
+  };
+
+  type SupabaseFilterBuilder<T = Record<string, unknown>> = {
+    eq(column: string, value: string): SupabaseResult<T>;
   };
 
   type SupabaseMutationBuilder<T = Record<string, unknown>> =

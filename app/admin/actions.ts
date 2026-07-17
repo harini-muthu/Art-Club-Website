@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   validateAttendanceSubmission,
+  validateMeetingUpdateSubmission,
   validateMeetingSubmission,
-  validateMemberSubmission
+  validateMemberSubmission,
+  validateMemberUpdateSubmission
 } from "@/lib/admin-entry-validation";
 import { adminLoginRedirectUrl } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
@@ -87,6 +89,67 @@ export async function addMemberWithMembership(formData: FormData) {
   redirectToAdminWithStatus("member-added");
 }
 
+export async function updateMemberWithMembership(formData: FormData) {
+  const validation = validateMemberUpdateSubmission(formData);
+
+  if (!validation.ok) {
+    redirectToAdminWithError("member-invalid");
+  }
+
+  const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  const { error: memberError } = await supabase
+    .from("members")
+    .update(validation.data.member)
+    .eq("id", validation.data.member_id);
+
+  if (memberError) {
+    redirectToAdminWithError("member-save-failed");
+  }
+
+  if (validation.data.membership_id) {
+    const { error: membershipError } = await supabase
+      .from("memberships")
+      .update(validation.data.membership)
+      .eq("id", validation.data.membership_id);
+
+    if (membershipError) {
+      redirectToAdminWithError("member-save-failed");
+    }
+  } else {
+    const { error: membershipError } = await supabase.from("memberships").insert({
+      member_id: validation.data.member_id,
+      ...validation.data.membership,
+      added_by: officerProfile.full_name
+    });
+
+    if (membershipError) {
+      redirectToAdminWithError("member-save-failed");
+    }
+  }
+
+  redirectToAdminWithStatus("member-updated");
+}
+
+export async function deleteMember(formData: FormData) {
+  const memberId = formData.get("memberId");
+
+  if (typeof memberId !== "string" || !memberId.trim()) {
+    redirectToAdminWithError("member-invalid");
+  }
+
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase
+    .from("members")
+    .delete()
+    .eq("id", memberId.trim());
+
+  if (error) {
+    redirectToAdminWithError("member-save-failed");
+  }
+
+  redirectToAdminWithStatus("member-deleted");
+}
+
 export async function addMeetingActivity(formData: FormData) {
   const validation = validateMeetingSubmission(formData);
 
@@ -102,6 +165,47 @@ export async function addMeetingActivity(formData: FormData) {
   }
 
   redirectToAdminWithStatus("activity-added");
+}
+
+export async function updateMeetingActivity(formData: FormData) {
+  const validation = validateMeetingUpdateSubmission(formData);
+
+  if (!validation.ok) {
+    redirectToAdminWithError("activity-invalid");
+  }
+
+  const { meeting_id: meetingId, ...meetingData } = validation.data;
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase
+    .from("meetings")
+    .update(meetingData)
+    .eq("id", meetingId);
+
+  if (error) {
+    redirectToAdminWithError("activity-save-failed");
+  }
+
+  redirectToAdminWithStatus("activity-updated");
+}
+
+export async function deleteMeetingActivity(formData: FormData) {
+  const meetingId = formData.get("meetingId");
+
+  if (typeof meetingId !== "string" || !meetingId.trim()) {
+    redirectToAdminWithError("activity-invalid");
+  }
+
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase
+    .from("meetings")
+    .delete()
+    .eq("id", meetingId.trim());
+
+  if (error) {
+    redirectToAdminWithError("activity-save-failed");
+  }
+
+  redirectToAdminWithStatus("activity-deleted");
 }
 
 export async function addAttendanceRecord(formData: FormData) {

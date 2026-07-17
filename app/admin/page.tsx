@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminEntryForms } from "@/components/admin-entry-forms";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
   AdminAttendanceRecord,
   AdminMeeting,
@@ -13,7 +14,13 @@ import {
 } from "@/lib/admin-data";
 import { adminLoginRedirectUrl } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
-import { signOutAdmin } from "@/app/admin/actions";
+import {
+  deleteMeetingActivity,
+  deleteMember,
+  signOutAdmin,
+  updateMeetingActivity,
+  updateMemberWithMembership
+} from "@/app/admin/actions";
 
 export const metadata = {
   title: "Admin | Studio Collective"
@@ -60,8 +67,12 @@ function latestMembershipForMember(
 
 const statusMessages: Record<string, string> = {
   "activity-added": "Activity added.",
+  "activity-deleted": "Activity deleted.",
+  "activity-updated": "Activity updated.",
   "attendance-added": "Attendance recorded.",
-  "member-added": "Member and membership added."
+  "member-added": "Member and membership added.",
+  "member-deleted": "Member deleted.",
+  "member-updated": "Member updated."
 };
 
 const errorMessages: Record<string, string> = {
@@ -113,7 +124,7 @@ async function getAdminDashboardData() {
       .order("full_name", { ascending: true }),
     supabase
       .from("memberships")
-      .select("member_id, membership_type, starts_on, expires_on")
+      .select("id, member_id, membership_type, starts_on, expires_on, paid_amount")
       .order("expires_on", { ascending: false }),
     supabase
       .from("meetings")
@@ -239,28 +250,123 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   attendanceRecords
                 );
                 return (
-                  <article className="admin-row" key={member.id}>
-                    <div>
-                      <h3>{member.full_name}</h3>
-                      <p>{member.email || "No email listed"}</p>
+                  <article className="admin-row editable" key={member.id}>
+                    <div className="admin-row-summary">
+                      <div>
+                        <h3>{member.full_name}</h3>
+                        <p>{member.email || "No email listed"}</p>
+                      </div>
+                      <div>
+                        <strong>
+                          {membership
+                            ? getMembershipStatus(membership.expires_on)
+                            : "no membership"}
+                        </strong>
+                        <p>
+                          {membership
+                            ? `${membership.membership_type} through ${formatDate(
+                                membership.expires_on
+                              )}`
+                            : "Add a membership term later"}
+                        </p>
+                      </div>
+                      <div>
+                        <strong>{attendanceCount}</strong>
+                        <p>meetings attended</p>
+                      </div>
                     </div>
-                    <div>
-                      <strong>
-                        {membership
-                          ? getMembershipStatus(membership.expires_on)
-                          : "no membership"}
-                      </strong>
-                      <p>
-                        {membership
-                          ? `${membership.membership_type} through ${formatDate(
-                              membership.expires_on
-                            )}`
-                          : "Add a membership term later"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong>{attendanceCount}</strong>
-                      <p>meetings attended</p>
+                    <div className="admin-row-actions">
+                      <details>
+                        <summary className="button secondary">Edit</summary>
+                        <form
+                          action={updateMemberWithMembership}
+                          className="admin-entry-form inline"
+                        >
+                          <input name="memberId" type="hidden" value={member.id} />
+                          <input
+                            name="membershipId"
+                            type="hidden"
+                            value={membership?.id ?? ""}
+                          />
+                          <input
+                            name="originalMembershipType"
+                            type="hidden"
+                            value={membership?.membership_type ?? ""}
+                          />
+                          <input
+                            name="startsOn"
+                            type="hidden"
+                            value={membership?.starts_on ?? ""}
+                          />
+                          <input
+                            name="expiresOn"
+                            type="hidden"
+                            value={membership?.expires_on ?? ""}
+                          />
+                          <label>
+                            Full name
+                            <input
+                              defaultValue={member.full_name ?? ""}
+                              name="fullName"
+                              required
+                              type="text"
+                            />
+                          </label>
+                          <label>
+                            Email
+                            <input
+                              defaultValue={member.email ?? ""}
+                              name="email"
+                              type="email"
+                            />
+                          </label>
+                          <div className="admin-form-grid">
+                            <label>
+                              Paid for
+                              <select
+                                defaultValue={membership?.membership_type ?? "semester"}
+                                name="membershipType"
+                                required
+                              >
+                                <option value="semester">Semester</option>
+                                <option value="year">Year</option>
+                              </select>
+                            </label>
+                            <label>
+                              Amount
+                              <input
+                                defaultValue={membership?.paid_amount ?? ""}
+                                min="0"
+                                name="paidAmount"
+                                step="0.01"
+                                type="number"
+                              />
+                            </label>
+                          </div>
+                          <label>
+                            Notes
+                            <textarea
+                              defaultValue={member.notes ?? ""}
+                              name="notes"
+                              rows={3}
+                            />
+                          </label>
+                          <button className="button primary" type="submit">
+                            Save member
+                          </button>
+                        </form>
+                      </details>
+                      <form action={deleteMember}>
+                        <input name="memberId" type="hidden" value={member.id} />
+                        <ConfirmSubmitButton
+                          className="button danger"
+                          message={`Delete ${
+                            member.full_name ?? "this member"
+                          }? This cannot be undone.`}
+                        >
+                          Delete
+                        </ConfirmSubmitButton>
+                      </form>
                     </div>
                   </article>
                 );
@@ -283,19 +389,115 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           {meetings.length ? (
             <div className="admin-list">
               {meetings.map((meeting) => (
-                <article className="admin-row compact" key={meeting.id}>
-                  <div>
-                    <h3>{meeting.activity}</h3>
-                    <p>
-                      {formatDate(meeting.meeting_date)}
-                      {meeting.starts_at ? ` / ${formatTime(meeting.starts_at)}` : ""}
-                    </p>
+                <article className="admin-row compact editable" key={meeting.id}>
+                  <div className="admin-row-summary compact">
+                    <div>
+                      <h3>{meeting.activity}</h3>
+                      <p>
+                        {formatDate(meeting.meeting_date)}
+                        {meeting.starts_at ? ` / ${formatTime(meeting.starts_at)}` : ""}
+                      </p>
+                    </div>
+                    <div>
+                      <strong>
+                        {meeting.show_on_calendar === false ? "hidden" : "calendar"}
+                      </strong>
+                      <p>{meeting.location || "No location listed"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <strong>
-                      {meeting.show_on_calendar === false ? "hidden" : "calendar"}
-                    </strong>
-                    <p>{meeting.location || "No location listed"}</p>
+                  <div className="admin-row-actions">
+                    <details>
+                      <summary className="button secondary">Edit</summary>
+                      <form
+                        action={updateMeetingActivity}
+                        className="admin-entry-form inline"
+                      >
+                        <input name="meetingId" type="hidden" value={meeting.id} />
+                        <label>
+                          Activity
+                          <input
+                            defaultValue={meeting.activity ?? ""}
+                            name="activity"
+                            required
+                            type="text"
+                          />
+                        </label>
+                        <div className="admin-form-grid">
+                          <label>
+                            Date
+                            <input
+                              defaultValue={meeting.meeting_date ?? ""}
+                              name="meetingDate"
+                              required
+                              type="date"
+                            />
+                          </label>
+                          <label>
+                            Starts
+                            <input
+                              defaultValue={meeting.starts_at ?? ""}
+                              name="startsAt"
+                              type="time"
+                            />
+                          </label>
+                          <label>
+                            Ends
+                            <input
+                              defaultValue={meeting.ends_at ?? ""}
+                              name="endsAt"
+                              type="time"
+                            />
+                          </label>
+                          <label>
+                            Location
+                            <input
+                              defaultValue={meeting.location ?? ""}
+                              name="location"
+                              type="text"
+                            />
+                          </label>
+                        </div>
+                        <label>
+                          Image URL
+                          <input
+                            defaultValue={meeting.image_url ?? ""}
+                            name="imageUrl"
+                            placeholder="https://..."
+                            type="url"
+                          />
+                        </label>
+                        <label>
+                          Image description
+                          <input
+                            defaultValue={meeting.image_alt ?? ""}
+                            name="imageAlt"
+                            type="text"
+                          />
+                        </label>
+                        <label className="admin-checkbox">
+                          <input
+                            defaultChecked={meeting.show_on_calendar !== false}
+                            name="showOnCalendar"
+                            type="checkbox"
+                          />
+                          Show on calendar
+                        </label>
+                        <button className="button primary" type="submit">
+                          Save activity
+                        </button>
+                      </form>
+                    </details>
+                    <form action={deleteMeetingActivity}>
+                      <input name="meetingId" type="hidden" value={meeting.id} />
+                      <ConfirmSubmitButton
+                        className="button danger"
+                        message={`Delete ${
+                          meeting.activity ?? "this activity"
+                        }? Attendance for this meeting will also be removed.`}
+                      >
+                        Delete
+                      </ConfirmSubmitButton>
+                    </form>
                   </div>
                 </article>
               ))}

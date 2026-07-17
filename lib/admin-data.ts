@@ -8,10 +8,12 @@ export type AdminMember = {
 };
 
 export type AdminMembership = {
+  id?: string | null;
   member_id: string | null;
   membership_type?: string | null;
   starts_on?: string | null;
   expires_on: string;
+  paid_amount?: number | string | null;
 };
 
 export type AdminMeeting = {

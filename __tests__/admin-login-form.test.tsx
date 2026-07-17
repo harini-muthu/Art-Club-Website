@@ -41,6 +41,16 @@ describe("AdminLoginForm", () => {
     });
   });
 
+  it("shows the admin redirect reason when authorization bounces back to login", () => {
+    render(<AdminLoginForm redirectReason="missing-profile" />);
+
+    expect(
+      screen.getByText(
+        "Your sign-in worked, but this account is not configured as an officer."
+      )
+    ).toBeVisible();
+  });
+
   it("shows a friendly error and re-enables submit when Supabase setup throws", async () => {
     const user = userEvent.setup();
     vi.mocked(createClient).mockImplementation(() => {

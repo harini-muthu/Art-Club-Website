@@ -8,6 +8,7 @@ import {
   getMemberAttendanceCount,
   getMembershipStatus
 } from "@/lib/admin-data";
+import { adminLoginRedirectUrl } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 import { signOutAdmin } from "@/app/admin/actions";
 
@@ -61,7 +62,7 @@ async function getAdminDashboardData() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/admin/login");
+    redirect(adminLoginRedirectUrl("missing-session"));
   }
 
   const { data: officerProfile } = await supabase
@@ -71,7 +72,7 @@ async function getAdminDashboardData() {
     .single();
 
   if (!officerProfile) {
-    redirect("/admin/login");
+    redirect(adminLoginRedirectUrl("missing-profile"));
   }
 
   const [

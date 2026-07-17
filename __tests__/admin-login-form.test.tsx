@@ -1,12 +1,13 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AdminLoginForm } from "@/app/admin/login/login-form";
 import { createClient } from "@/lib/supabase/client";
 
 const pushMock = vi.fn();
 const refreshMock = vi.fn();
+const assignMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -20,8 +21,24 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 describe("AdminLoginForm", () => {
+  const originalLocation = window.location;
+
+  beforeEach(() => {
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        assign: assignMock
+      }
+    });
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: originalLocation
+    });
   });
 
   it("shows a friendly error and re-enables submit when Supabase setup throws", async () => {
@@ -45,7 +62,7 @@ describe("AdminLoginForm", () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("navigates to admin after successful login", async () => {
+  it("performs a full-page navigation to admin after successful login", async () => {
     const user = userEvent.setup();
     vi.mocked(createClient).mockReturnValue({
       auth: {
@@ -65,7 +82,8 @@ describe("AdminLoginForm", () => {
     await user.type(screen.getByLabelText("Password"), "password123");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/admin"));
-    expect(refreshMock).toHaveBeenCalled();
+    await waitFor(() => expect(assignMock).toHaveBeenCalledWith("/admin"));
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(refreshMock).not.toHaveBeenCalled();
   });
 });

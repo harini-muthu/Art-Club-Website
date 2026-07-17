@@ -1,13 +1,20 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { getAdminLoginRedirectMessage } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/client";
 
-export function AdminLoginForm() {
+type AdminLoginFormProps = {
+  redirectReason?: string | null;
+};
+
+export function AdminLoginForm({ redirectReason = null }: AdminLoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const redirectMessage = getAdminLoginRedirectMessage(redirectReason);
+  const formMessage = error || redirectMessage;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,7 +63,7 @@ export function AdminLoginForm() {
           value={password}
         />
       </label>
-      {error ? <p className="form-error">{error}</p> : null}
+      {formMessage ? <p className="form-error">{formMessage}</p> : null}
       <button className="button primary" disabled={isSubmitting} type="submit">
         {isSubmitting ? "Signing in..." : "Sign in"}
       </button>

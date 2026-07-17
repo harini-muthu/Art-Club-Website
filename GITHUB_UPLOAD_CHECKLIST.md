@@ -8,6 +8,7 @@ these files and folders while preserving the same folder structure.
 - `.env.example`
 - `.gitignore`
 - `.npmrc`
+- `GITHUB_UPLOAD_CHECKLIST.md`
 - `README.md`
 - `eslint.config.mjs`
 - `next-env.d.ts`
@@ -45,6 +46,7 @@ these files and folders while preserving the same folder structure.
 - `lib/admin-data.ts`
 - `lib/admin-entry-validation.ts`
 - `lib/contact-validation.ts`
+- `lib/event-display.ts`
 - `lib/site-data.ts`
 - `lib/supabase/client.ts`
 - `lib/supabase/config.ts`
@@ -61,6 +63,7 @@ these files and folders while preserving the same folder structure.
 - `__tests__/contact-form.test.tsx`
 - `__tests__/contact-route.test.ts`
 - `__tests__/contact-validation.test.ts`
+- `__tests__/event-display.test.ts`
 - `__tests__/gallery-lightbox.test.tsx`
 - `__tests__/navigation.test.tsx`
 - `__tests__/site-content.test.ts`
@@ -71,6 +74,10 @@ these files and folders while preserving the same folder structure.
 
 - `test-stubs/supabase-ssr.ts`
 - `types/supabase-ssr.d.ts`
+
+## Upload These Supabase SQL Files
+
+- `supabase/sql/2026-07-17-event-images-public-calendar.sql`
 
 ## Do Not Upload These
 

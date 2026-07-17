@@ -194,6 +194,35 @@ main {
   border-radius: 999px;
 }
 
+.featured-event.with-image {
+  display: grid;
+  grid-template-rows: minmax(190px, 0.7fr) auto;
+  gap: 20px;
+  background: var(--ink);
+}
+
+.featured-event.with-image::after {
+  display: none;
+}
+
+.featured-event-image,
+.event-image {
+  min-height: 180px;
+  background-position: center;
+  background-size: cover;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+}
+
+.featured-event-image {
+  min-height: clamp(220px, 34vw, 360px);
+}
+
+.featured-event-copy {
+  position: relative;
+  z-index: 1;
+}
+
 .featured-event span,
 .featured-event dt {
   font-size: 0.78rem;
@@ -330,6 +359,11 @@ main {
   border-radius: 14px;
   font-family: var(--font-display), Arial, sans-serif;
   font-weight: 900;
+}
+
+.event-image {
+  min-height: 150px;
+  border-color: var(--line);
 }
 
 .event-meta,

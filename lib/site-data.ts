@@ -6,10 +6,13 @@ export type NavItem = {
 export type EventItem = {
   title: string;
   date: string;
+  eventDate: string;
   time: string;
   location: string;
   description: string;
   imageTone: string;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
   semester: string;
   status: "completed";
   featured?: boolean;
@@ -49,6 +52,7 @@ export const events: EventItem[] = [
   {
     title: "Spring Showcase Night",
     date: "March 21",
+    eventDate: "2026-03-21",
     time: "6:00 PM - 8:00 PM",
     location: "Student Union Atrium",
     description:
@@ -61,6 +65,7 @@ export const events: EventItem[] = [
   {
     title: "Open Studio Night",
     date: "February 6",
+    eventDate: "2026-02-06",
     time: "4:30 PM - 6:00 PM",
     location: "Arts Lab 204",
     description:
@@ -72,6 +77,7 @@ export const events: EventItem[] = [
   {
     title: "Printmaking Workshop",
     date: "February 20",
+    eventDate: "2026-02-20",
     time: "5:00 PM - 6:30 PM",
     location: "Media Room B",
     description:
@@ -83,6 +89,7 @@ export const events: EventItem[] = [
   {
     title: "Critique Circle",
     date: "March 6",
+    eventDate: "2026-03-06",
     time: "7:00 PM - 9:00 PM",
     location: "Studio Classroom",
     description:

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addAttendanceRecord,
   addMeetingActivity,
@@ -101,6 +101,12 @@ function setupSupabaseMock() {
 describe("admin data entry actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-17T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("adds a member and matching membership term", async () => {
@@ -113,8 +119,6 @@ describe("admin data entry actions", () => {
           email: "harini@example.edu",
           notes: "Paid in cash",
           membershipType: "year",
-          startsOn: "2026-08-26",
-          expiresOn: "2027-05-15",
           paidAmount: "25"
         })
       )
@@ -128,8 +132,8 @@ describe("admin data entry actions", () => {
     expect(membershipInsert).toHaveBeenCalledWith({
       member_id: "member-1",
       membership_type: "year",
-      starts_on: "2026-08-26",
-      expires_on: "2027-05-15",
+      starts_on: "2026-07-17",
+      expires_on: "2027-05-31",
       paid_amount: 25,
       added_by: "Officer One"
     });
@@ -147,6 +151,8 @@ describe("admin data entry actions", () => {
           startsAt: "18:30",
           endsAt: "",
           location: "Studio 204",
+          imageUrl: "https://example.edu/figure-night.jpg",
+          imageAlt: "Figure drawing setup",
           showOnCalendar: "on"
         })
       )
@@ -158,6 +164,8 @@ describe("admin data entry actions", () => {
       starts_at: "18:30",
       ends_at: null,
       location: "Studio 204",
+      image_url: "https://example.edu/figure-night.jpg",
+      image_alt: "Figure drawing setup",
       show_on_calendar: true
     });
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
@@ -191,9 +199,7 @@ describe("admin data entry actions", () => {
       addMemberWithMembership(
         formData({
           fullName: "",
-          membershipType: "semester",
-          startsOn: "2026-08-26",
-          expiresOn: "2026-12-15"
+          membershipType: "semester"
         })
       )
     ).rejects.toThrow("REDIRECT:/admin?error=member-invalid");

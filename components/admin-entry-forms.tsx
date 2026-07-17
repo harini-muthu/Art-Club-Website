@@ -38,14 +38,6 @@ export function AdminEntryForms({ members, meetings }: AdminEntryFormsProps) {
               </select>
             </label>
             <label>
-              Starts
-              <input name="startsOn" required type="date" />
-            </label>
-            <label>
-              Expires
-              <input name="expiresOn" required type="date" />
-            </label>
-            <label>
               Amount
               <input min="0" name="paidAmount" step="0.01" type="number" />
             </label>
@@ -88,6 +80,14 @@ export function AdminEntryForms({ members, meetings }: AdminEntryFormsProps) {
               <input name="location" type="text" />
             </label>
           </div>
+          <label>
+            Image URL
+            <input name="imageUrl" placeholder="https://..." type="url" />
+          </label>
+          <label>
+            Image description
+            <input name="imageAlt" type="text" />
+          </label>
           <label className="admin-checkbox">
             <input defaultChecked name="showOnCalendar" type="checkbox" />
             Show on calendar

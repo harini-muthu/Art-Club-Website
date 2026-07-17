@@ -28,6 +28,8 @@ export type MeetingSubmission = {
   starts_at: string | null;
   ends_at: string | null;
   location: string | null;
+  image_url: string | null;
+  image_alt: string | null;
   show_on_calendar: boolean;
 };
 
@@ -63,15 +65,46 @@ function isValidOptionalEmail(value: string) {
   return value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function isValidOptionalUrl(value: string) {
+  if (!value) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function dateOnly(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+export function getMembershipTerm(
+  membershipType: MembershipType,
+  now: Date = new Date()
+) {
+  const addedYear = now.getUTCFullYear();
+
+  return {
+    starts_on: dateOnly(now),
+    expires_on:
+      membershipType === "semester"
+        ? `${addedYear}-12-31`
+        : `${addedYear + 1}-05-31`
+  };
+}
+
 export function validateMemberSubmission(
-  formData: FormData
+  formData: FormData,
+  now: Date = new Date()
 ): ValidationResult<MemberSubmission> {
   const fullName = readField(formData, "fullName");
   const email = readField(formData, "email");
   const notes = readField(formData, "notes");
   const membershipType = readField(formData, "membershipType");
-  const startsOn = readField(formData, "startsOn");
-  const expiresOn = readField(formData, "expiresOn");
   const paidAmountInput = readField(formData, "paidAmount");
   const paidAmount = paidAmountInput ? Number(paidAmountInput) : null;
   const fieldErrors: FieldErrors = {};
@@ -86,16 +119,6 @@ export function validateMemberSubmission(
 
   if (!membershipTypes.includes(membershipType as MembershipType)) {
     fieldErrors.membershipType = "Choose semester or year.";
-  }
-
-  if (!isValidDate(startsOn)) {
-    fieldErrors.startsOn = "Choose a valid start date.";
-  }
-
-  if (!isValidDate(expiresOn)) {
-    fieldErrors.expiresOn = "Choose a valid expiration date.";
-  } else if (isValidDate(startsOn) && expiresOn < startsOn) {
-    fieldErrors.expiresOn = "Expiration date must be on or after the start date.";
   }
 
   if (paidAmount !== null && (!Number.isFinite(paidAmount) || paidAmount < 0)) {
@@ -116,8 +139,7 @@ export function validateMemberSubmission(
       },
       membership: {
         membership_type: membershipType as MembershipType,
-        starts_on: startsOn,
-        expires_on: expiresOn,
+        ...getMembershipTerm(membershipType as MembershipType, now),
         paid_amount: paidAmount
       }
     }
@@ -132,6 +154,8 @@ export function validateMeetingSubmission(
   const startsAt = readField(formData, "startsAt");
   const endsAt = readField(formData, "endsAt");
   const location = readField(formData, "location");
+  const imageUrl = readField(formData, "imageUrl");
+  const imageAlt = readField(formData, "imageAlt");
   const fieldErrors: FieldErrors = {};
 
   if (!activity) {
@@ -152,6 +176,10 @@ export function validateMeetingSubmission(
     fieldErrors.endsAt = "End time must be after the start time.";
   }
 
+  if (!isValidOptionalUrl(imageUrl)) {
+    fieldErrors.imageUrl = "Enter a valid image URL or leave it blank.";
+  }
+
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, fieldErrors };
   }
@@ -164,6 +192,8 @@ export function validateMeetingSubmission(
       starts_at: nullIfBlank(startsAt),
       ends_at: nullIfBlank(endsAt),
       location: nullIfBlank(location),
+      image_url: nullIfBlank(imageUrl),
+      image_alt: nullIfBlank(imageAlt),
       show_on_calendar: formData.get("showOnCalendar") === "on"
     }
   };

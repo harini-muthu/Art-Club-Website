@@ -21,6 +21,8 @@ export type AdminMeeting = {
   starts_at?: string | null;
   ends_at?: string | null;
   location?: string | null;
+  image_url?: string | null;
+  image_alt?: string | null;
   show_on_calendar?: boolean | null;
 };
 

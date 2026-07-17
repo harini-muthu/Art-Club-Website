@@ -1,16 +1,110 @@
 import Link from "next/link";
 import { PageSection } from "@/components/page-section";
+import {
+  buildPublicEventsFromMeetings,
+  buildPublicEventsFromStaticEvents,
+  PublicEvent,
+  PublicMeetingRow,
+  selectHighlightedEvent
+} from "@/lib/event-display";
 import { clubName, events } from "@/lib/site-data";
+import { hasSupabaseBrowserConfig } from "@/lib/supabase/config";
+import { createClient } from "@/lib/supabase/server";
 
-const featuredEvent = events.find((event) => event.featured) ?? events[0];
-const otherEvents = events.filter((event) => event !== featuredEvent);
+async function getPublicEvents() {
+  const fallbackEvents = buildPublicEventsFromStaticEvents(events);
 
-export default function EventsPage() {
+  if (!hasSupabaseBrowserConfig()) {
+    return fallbackEvents;
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from<PublicMeetingRow>("meetings")
+      .select(
+        "id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar"
+      )
+      .order("meeting_date", { ascending: true });
+
+    if (error || !data?.length) {
+      return fallbackEvents;
+    }
+
+    const publicEvents = buildPublicEventsFromMeetings(data);
+    return publicEvents.length ? publicEvents : fallbackEvents;
+  } catch {
+    return fallbackEvents;
+  }
+}
+
+function EventImage({ event }: { event: PublicEvent }) {
+  if (event.imageUrl) {
+    return (
+      <div
+        aria-label={event.imageAlt ?? event.title}
+        className="event-image"
+        role="img"
+        style={{ backgroundImage: `url(${event.imageUrl})` }}
+      />
+    );
+  }
+
+  return (
+    <div className={`image-tile tone-${event.imageTone}`}>
+      <span>{event.dateLabel}</span>
+    </div>
+  );
+}
+
+function FeaturedEvent({ event }: { event: PublicEvent }) {
+  return (
+    <article
+      className={`featured-event tone-${event.imageTone} ${
+        event.imageUrl ? "with-image" : ""
+      }`}
+    >
+      {event.imageUrl ? (
+        <div
+          aria-label={event.imageAlt ?? event.title}
+          className="featured-event-image"
+          role="img"
+          style={{ backgroundImage: `url(${event.imageUrl})` }}
+        />
+      ) : null}
+      <div className="featured-event-copy">
+        <span>Closest event</span>
+        <h2>{event.title}</h2>
+        <p>{event.description}</p>
+        <dl>
+          <div>
+            <dt>Date</dt>
+            <dd>{event.dateLabel}</dd>
+          </div>
+          <div>
+            <dt>Time</dt>
+            <dd>{event.time}</dd>
+          </div>
+          <div>
+            <dt>Place</dt>
+            <dd>{event.location}</dd>
+          </div>
+        </dl>
+      </div>
+    </article>
+  );
+}
+
+export default async function EventsPage() {
+  const publicEvents = await getPublicEvents();
+  const featuredEvent = selectHighlightedEvent(publicEvents) ?? publicEvents[0];
+  const otherEvents = publicEvents.filter((event) => event.id !== featuredEvent.id);
+
   return (
     <>
       <section className="hero event-hero">
         <div className="hero-copy">
-          <p className="eyebrow">Recent events</p>
+          <p className="eyebrow">Club events</p>
           <h1>{clubName}</h1>
           <p>
             A student creative club for showcases, workshops, collaborations,
@@ -25,43 +119,23 @@ export default function EventsPage() {
             </Link>
           </div>
         </div>
-        <article className={`featured-event tone-${featuredEvent.imageTone}`}>
-          <span>Featured recent</span>
-          <h2>{featuredEvent.title}</h2>
-          <p>{featuredEvent.description}</p>
-          <dl>
-            <div>
-              <dt>Date</dt>
-              <dd>{featuredEvent.date}</dd>
-            </div>
-            <div>
-              <dt>Time</dt>
-              <dd>{featuredEvent.time}</dd>
-            </div>
-            <div>
-              <dt>Place</dt>
-              <dd>{featuredEvent.location}</dd>
-            </div>
-          </dl>
-        </article>
+        <FeaturedEvent event={featuredEvent} />
       </section>
 
       <PageSection
         eyebrow="Calendar"
-        title="Completed this semester"
-        intro="A recent archive of art club events from this semester. Future events can be added after they happen."
+        title="Club events"
+        intro="A current calendar of art club activities. The highlighted event is the one closest to today."
       >
         <div className="event-grid">
           {otherEvents.map((event) => (
-            <article className="event-card" key={event.title}>
-              <div className={`image-tile tone-${event.imageTone}`}>
-                <span>{event.date}</span>
-              </div>
+            <article className="event-card" key={event.id}>
+              <EventImage event={event} />
               <div>
                 <h3>{event.title}</h3>
                 <p>{event.description}</p>
                 <p className="event-meta">
-                  {event.time} / {event.location}
+                  {event.dateLabel} / {event.time} / {event.location}
                 </p>
               </div>
             </article>

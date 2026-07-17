@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getMembershipTerm,
   validateAttendanceSubmission,
   validateMeetingSubmission,
   validateMemberSubmission
@@ -12,17 +13,27 @@ function formData(values: Record<string, string>) {
 }
 
 describe("admin entry validation", () => {
-  it("builds member and membership rows from a valid member form", () => {
+  it("computes semester and yearly membership dates from the date added", () => {
+    expect(getMembershipTerm("semester", new Date("2026-07-17T12:00:00Z"))).toEqual({
+      starts_on: "2026-07-17",
+      expires_on: "2026-12-31"
+    });
+    expect(getMembershipTerm("year", new Date("2026-07-17T12:00:00Z"))).toEqual({
+      starts_on: "2026-07-17",
+      expires_on: "2027-05-31"
+    });
+  });
+
+  it("builds member and computed membership rows from a valid member form", () => {
     const result = validateMemberSubmission(
       formData({
         fullName: "  Harini Muthu  ",
         email: " harini@example.edu ",
         notes: "Paid at first meeting",
         membershipType: "semester",
-        startsOn: "2026-08-26",
-        expiresOn: "2026-12-15",
         paidAmount: "15"
-      })
+      }),
+      new Date("2026-08-26T12:00:00Z")
     );
 
     expect(result).toEqual({
@@ -36,7 +47,7 @@ describe("admin entry validation", () => {
         membership: {
           membership_type: "semester",
           starts_on: "2026-08-26",
-          expires_on: "2026-12-15",
+          expires_on: "2026-12-31",
           paid_amount: 15
         }
       }
@@ -49,8 +60,6 @@ describe("admin entry validation", () => {
         fullName: "",
         email: "not-an-email",
         membershipType: "weekly",
-        startsOn: "2026-12-15",
-        expiresOn: "2026-08-26",
         paidAmount: "-5"
       })
     );
@@ -61,7 +70,6 @@ describe("admin entry validation", () => {
         fullName: "Enter the member's full name.",
         email: "Enter a valid email address or leave it blank.",
         membershipType: "Choose semester or year.",
-        expiresOn: "Expiration date must be on or after the start date.",
         paidAmount: "Paid amount must be zero or more."
       }
     });
@@ -75,6 +83,8 @@ describe("admin entry validation", () => {
         startsAt: "18:30",
         endsAt: "20:00",
         location: "Art Studio 204",
+        imageUrl: " https://example.edu/poster.jpg ",
+        imageAlt: "Watercolor meeting poster",
         showOnCalendar: "on"
       })
     );
@@ -87,6 +97,8 @@ describe("admin entry validation", () => {
         starts_at: "18:30",
         ends_at: "20:00",
         location: "Art Studio 204",
+        image_url: "https://example.edu/poster.jpg",
+        image_alt: "Watercolor meeting poster",
         show_on_calendar: true
       }
     });

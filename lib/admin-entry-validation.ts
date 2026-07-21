@@ -5,6 +5,8 @@ type ValidationResult<T> =
   | { ok: false; fieldErrors: FieldErrors };
 
 const membershipTypes = ["semester", "year"] as const;
+const acceptedEventImageTypes = ["image/jpeg", "image/png"];
+export const maxEventImageSize = 5 * 1024 * 1024;
 
 type MembershipType = (typeof membershipTypes)[number];
 
@@ -33,8 +35,11 @@ export type MeetingSubmission = {
   starts_at: string | null;
   ends_at: string | null;
   location: string | null;
+  image_file: File | null;
   image_url: string | null;
+  current_image_url: string | null;
   image_alt: string | null;
+  remove_image: boolean;
   show_on_calendar: boolean;
 };
 
@@ -55,6 +60,21 @@ function readField(formData: FormData, field: string) {
 
 function nullIfBlank(value: string) {
   return value ? value : null;
+}
+
+function readOptionalFile(formData: FormData, field: string) {
+  const value = formData.get(field);
+
+  if (
+    typeof File !== "undefined" &&
+    value instanceof File &&
+    value.name &&
+    value.size > 0
+  ) {
+    return value;
+  }
+
+  return null;
 }
 
 function isValidDate(value: string) {
@@ -84,6 +104,24 @@ function isValidOptionalUrl(value: string) {
     return url.protocol === "http:" || url.protocol === "https:";
   } catch {
     return false;
+  }
+}
+
+function validateOptionalEventImageFile(
+  file: File | null,
+  fieldErrors: FieldErrors
+) {
+  if (!file) {
+    return;
+  }
+
+  if (!acceptedEventImageTypes.includes(file.type)) {
+    fieldErrors.eventImage = "Upload a JPG or PNG image.";
+    return;
+  }
+
+  if (file.size > maxEventImageSize) {
+    fieldErrors.eventImage = "Image must be 5 MB or smaller.";
   }
 }
 
@@ -212,8 +250,10 @@ export function validateMeetingSubmission(
   const startsAt = readField(formData, "startsAt");
   const endsAt = readField(formData, "endsAt");
   const location = readField(formData, "location");
-  const imageUrl = readField(formData, "imageUrl");
+  const currentImageUrl = readField(formData, "currentImageUrl");
+  const imageFile = readOptionalFile(formData, "eventImage");
   const imageAlt = readField(formData, "imageAlt");
+  const removeImage = formData.get("removeImage") === "on";
   const fieldErrors: FieldErrors = {};
 
   if (!activity) {
@@ -234,13 +274,17 @@ export function validateMeetingSubmission(
     fieldErrors.endsAt = "End time must be after the start time.";
   }
 
-  if (!isValidOptionalUrl(imageUrl)) {
-    fieldErrors.imageUrl = "Enter a valid image URL or leave it blank.";
+  if (!isValidOptionalUrl(currentImageUrl)) {
+    fieldErrors.currentImageUrl = "Existing image URL is invalid.";
   }
+
+  validateOptionalEventImageFile(imageFile, fieldErrors);
 
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, fieldErrors };
   }
+
+  const preservedImageUrl = removeImage ? null : nullIfBlank(currentImageUrl);
 
   return {
     ok: true,
@@ -250,8 +294,11 @@ export function validateMeetingSubmission(
       starts_at: nullIfBlank(startsAt),
       ends_at: nullIfBlank(endsAt),
       location: nullIfBlank(location),
-      image_url: nullIfBlank(imageUrl),
+      image_file: imageFile,
+      image_url: imageFile ? null : preservedImageUrl,
+      current_image_url: nullIfBlank(currentImageUrl),
       image_alt: nullIfBlank(imageAlt),
+      remove_image: removeImage,
       show_on_calendar: formData.get("showOnCalendar") === "on"
     }
   };

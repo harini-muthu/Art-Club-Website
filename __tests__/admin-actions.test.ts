@@ -26,7 +26,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn()
 }));
 
-function formData(values: Record<string, string>) {
+function formData(values: Record<string, string | File>) {
   const data = new FormData();
   Object.entries(values).forEach(([key, value]) => data.set(key, value));
   return data;
@@ -50,11 +50,32 @@ function setupSupabaseMock() {
   const meetingUpdate = vi.fn(() => ({ eq: meetingUpdateEq }));
   const meetingDeleteEq = vi.fn(async () => ({ error: null }));
   const meetingDelete = vi.fn(() => ({ eq: meetingDeleteEq }));
+  const meetingSelectSingle = vi.fn(async () => ({
+    data: {
+      image_url:
+        "https://example.supabase.co/storage/v1/object/public/event-images/events/meeting-1/old-poster.jpg"
+    },
+    error: null
+  }));
+  const meetingSelectEq = vi.fn(() => ({ single: meetingSelectSingle }));
+  const meetingSelect = vi.fn(() => ({ eq: meetingSelectEq }));
   const attendanceInsert = vi.fn(async () => ({ error: null }));
   const memberLookup = vi.fn(() => ({
     eq: () => ({
       single: async () => ({ data: { full_name: "Harini Muthu" }, error: null })
     })
+  }));
+  const storageUpload = vi.fn(async () => ({ data: { path: "uploaded" }, error: null }));
+  const storageGetPublicUrl = vi.fn((path: string) => ({
+    data: {
+      publicUrl: `https://example.supabase.co/storage/v1/object/public/event-images/${path}`
+    }
+  }));
+  const storageRemove = vi.fn(async () => ({ data: [], error: null }));
+  const storageFrom = vi.fn(() => ({
+    getPublicUrl: storageGetPublicUrl,
+    remove: storageRemove,
+    upload: storageUpload
   }));
 
   const supabase = {
@@ -96,6 +117,7 @@ function setupSupabaseMock() {
         return {
           delete: meetingDelete,
           insert: meetingInsert,
+          select: meetingSelect,
           update: meetingUpdate
         };
       }
@@ -105,7 +127,10 @@ function setupSupabaseMock() {
       }
 
       throw new Error(`Unexpected table ${table}`);
-    })
+    }),
+    storage: {
+      from: storageFrom
+    }
   };
 
   vi.mocked(createClient).mockResolvedValue(supabase as never);
@@ -115,6 +140,9 @@ function setupSupabaseMock() {
     meetingDelete,
     meetingDeleteEq,
     meetingInsert,
+    meetingSelect,
+    meetingSelectEq,
+    meetingSelectSingle,
     meetingUpdate,
     meetingUpdateEq,
     memberDelete,
@@ -124,7 +152,11 @@ function setupSupabaseMock() {
     memberUpdateEq,
     membershipInsert,
     membershipUpdate,
-    membershipUpdateEq
+    membershipUpdateEq,
+    storageFrom,
+    storageGetPublicUrl,
+    storageRemove,
+    storageUpload
   };
 }
 
@@ -133,6 +165,8 @@ describe("admin data entry actions", () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-17T12:00:00Z"));
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-key";
   });
 
   afterEach(() => {
@@ -170,8 +204,12 @@ describe("admin data entry actions", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
   });
 
-  it("adds a calendar meeting activity", async () => {
-    const { meetingInsert } = setupSupabaseMock();
+  it("adds a calendar meeting activity with an uploaded event image", async () => {
+    const { meetingInsert, storageFrom, storageGetPublicUrl, storageUpload } =
+      setupSupabaseMock();
+    const image = new File(["image"], "Figure Night.JPG", {
+      type: "image/jpeg"
+    });
 
     await expect(
       addMeetingActivity(
@@ -181,7 +219,7 @@ describe("admin data entry actions", () => {
           startsAt: "18:30",
           endsAt: "",
           location: "Studio 204",
-          imageUrl: "https://example.edu/figure-night.jpg",
+          eventImage: image,
           imageAlt: "Figure drawing setup",
           showOnCalendar: "on"
         })
@@ -194,10 +232,24 @@ describe("admin data entry actions", () => {
       starts_at: "18:30",
       ends_at: null,
       location: "Studio 204",
-      image_url: "https://example.edu/figure-night.jpg",
+      image_url: expect.stringMatching(
+        /^https:\/\/example\.supabase\.co\/storage\/v1\/object\/public\/event-images\/events\/event\/.+-figure-night\.jpg$/
+      ),
       image_alt: "Figure drawing setup",
       show_on_calendar: true
     });
+    expect(storageFrom).toHaveBeenCalledWith("event-images");
+    expect(storageUpload).toHaveBeenCalledWith(
+      expect.stringMatching(/^events\/event\/.+-figure-night\.jpg$/),
+      image,
+      {
+        contentType: "image/jpeg",
+        upsert: true
+      }
+    );
+    expect(storageGetPublicUrl).toHaveBeenCalledWith(
+      expect.stringMatching(/^events\/event\/.+-figure-night\.jpg$/)
+    );
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
   });
 
@@ -287,8 +339,10 @@ describe("admin data entry actions", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
   });
 
-  it("updates a meeting activity", async () => {
-    const { meetingUpdate, meetingUpdateEq } = setupSupabaseMock();
+  it("updates a meeting activity and replaces an uploaded image", async () => {
+    const { meetingUpdate, meetingUpdateEq, storageRemove, storageUpload } =
+      setupSupabaseMock();
+    const image = new File(["image"], "Updated.png", { type: "image/png" });
 
     await expect(
       updateMeetingActivity(
@@ -299,7 +353,9 @@ describe("admin data entry actions", () => {
           startsAt: "18:30",
           endsAt: "20:00",
           location: "Studio 204",
-          imageUrl: "https://example.edu/updated.jpg",
+          currentImageUrl:
+            "https://example.supabase.co/storage/v1/object/public/event-images/events/meeting-1/old-poster.jpg",
+          eventImage: image,
           imageAlt: "Updated event image",
           showOnCalendar: "on"
         })
@@ -312,21 +368,76 @@ describe("admin data entry actions", () => {
       starts_at: "18:30",
       ends_at: "20:00",
       location: "Studio 204",
-      image_url: "https://example.edu/updated.jpg",
+      image_url: expect.stringMatching(
+        /^https:\/\/example\.supabase\.co\/storage\/v1\/object\/public\/event-images\/events\/meeting-1\/.+-updated\.png$/
+      ),
       image_alt: "Updated event image",
       show_on_calendar: true
     });
+    expect(storageUpload).toHaveBeenCalledWith(
+      expect.stringMatching(/^events\/meeting-1\/.+-updated\.png$/),
+      image,
+      {
+        contentType: "image/png",
+        upsert: true
+      }
+    );
+    expect(storageRemove).toHaveBeenCalledWith([
+      "events/meeting-1/old-poster.jpg"
+    ]);
     expect(meetingUpdateEq).toHaveBeenCalledWith("id", "meeting-1");
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
   });
 
+  it("updates a meeting activity and removes its uploaded image", async () => {
+    const { meetingUpdate, storageRemove, storageUpload } = setupSupabaseMock();
+
+    await expect(
+      updateMeetingActivity(
+        formData({
+          meetingId: "meeting-1",
+          activity: "Updated Figure Drawing",
+          meetingDate: "2026-09-09",
+          startsAt: "18:30",
+          endsAt: "20:00",
+          location: "Studio 204",
+          currentImageUrl:
+            "https://example.supabase.co/storage/v1/object/public/event-images/events/meeting-1/old-poster.jpg",
+          removeImage: "on",
+          imageAlt: "",
+          showOnCalendar: "on"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin?status=activity-updated");
+
+    expect(storageUpload).not.toHaveBeenCalled();
+    expect(storageRemove).toHaveBeenCalledWith([
+      "events/meeting-1/old-poster.jpg"
+    ]);
+    expect(meetingUpdate).toHaveBeenCalledWith({
+      activity: "Updated Figure Drawing",
+      meeting_date: "2026-09-09",
+      starts_at: "18:30",
+      ends_at: "20:00",
+      location: "Studio 204",
+      image_url: null,
+      image_alt: null,
+      show_on_calendar: true
+    });
+  });
+
   it("deletes a meeting activity", async () => {
-    const { meetingDelete, meetingDeleteEq } = setupSupabaseMock();
+    const { meetingDelete, meetingDeleteEq, meetingSelectEq, storageRemove } =
+      setupSupabaseMock();
 
     await expect(
       deleteMeetingActivity(formData({ meetingId: "meeting-1" }))
     ).rejects.toThrow("REDIRECT:/admin?status=activity-deleted");
 
+    expect(meetingSelectEq).toHaveBeenCalledWith("id", "meeting-1");
+    expect(storageRemove).toHaveBeenCalledWith([
+      "events/meeting-1/old-poster.jpg"
+    ]);
     expect(meetingDelete).toHaveBeenCalled();
     expect(meetingDeleteEq).toHaveBeenCalledWith("id", "meeting-1");
     expect(revalidatePath).toHaveBeenCalledWith("/admin");

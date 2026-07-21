@@ -39,6 +39,26 @@ declare module "@supabase/ssr" {
       select(columns: string): SupabaseQueryBuilder<T>;
     };
 
+  type SupabaseStorageBucket = {
+    getPublicUrl(path: string): { data: { publicUrl: string } };
+    remove(paths: string[]): Promise<{
+      data: unknown[] | null;
+      error: { message: string } | null;
+    }>;
+    upload(
+      path: string,
+      file: File,
+      options?: { contentType?: string; upsert?: boolean }
+    ): Promise<{
+      data: { path: string } | null;
+      error: { message: string } | null;
+    }>;
+  };
+
+  type SupabaseStorageClient = {
+    from(bucket: string): SupabaseStorageBucket;
+  };
+
   type SupabaseClient = {
     auth: {
       getUser(): Promise<{
@@ -52,6 +72,7 @@ declare module "@supabase/ssr" {
       signOut(): Promise<{ error: { message: string } | null }>;
     };
     from<T = Record<string, unknown>>(table: string): SupabaseQueryBuilder<T>;
+    storage: SupabaseStorageClient;
   };
 
   export function createBrowserClient(

@@ -411,8 +411,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <form
                         action={updateMeetingActivity}
                         className="admin-entry-form inline"
+                        encType="multipart/form-data"
                       >
                         <input name="meetingId" type="hidden" value={meeting.id} />
+                        <input
+                          name="currentImageUrl"
+                          type="hidden"
+                          value={meeting.image_url ?? ""}
+                        />
                         <label>
                           Activity
                           <input
@@ -458,14 +464,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           </label>
                         </div>
                         <label>
-                          Image URL
+                          Replace image
                           <input
-                            defaultValue={meeting.image_url ?? ""}
-                            name="imageUrl"
-                            placeholder="https://..."
-                            type="url"
+                            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                            name="eventImage"
+                            type="file"
                           />
                         </label>
+                        {meeting.image_url ? (
+                          <label className="admin-checkbox">
+                            <input name="removeImage" type="checkbox" />
+                            Remove current image
+                          </label>
+                        ) : null}
                         <label>
                           Image description
                           <input

@@ -83,7 +83,10 @@ describe("AdminLoginForm", () => {
         signInWithPassword: vi.fn(async () => ({ error: null })),
         signOut: vi.fn(async () => ({ error: null }))
       },
-      from: vi.fn()
+      from: vi.fn(),
+      storage: {
+        from: vi.fn()
+      }
     } as ReturnType<typeof createClient>);
 
     render(<AdminLoginForm />);

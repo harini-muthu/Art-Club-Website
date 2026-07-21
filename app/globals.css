@@ -930,7 +930,8 @@ main {
 .admin-entry-form input:focus,
 .admin-entry-form select:focus,
 .admin-entry-form textarea:focus,
-.admin-search-form input:focus {
+.admin-search-form input:focus,
+.attendance-form input:focus {
   outline: 3px solid #f0abfc;
   outline-offset: 2px;
 }
@@ -1050,6 +1051,144 @@ main {
   border-radius: 12px;
 }
 
+.attendance-qr-panel {
+  margin-bottom: 18px;
+}
+
+.attendance-qr-content {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.attendance-qr-image {
+  display: block;
+  width: 220px;
+  height: 220px;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.attendance-qr-link {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.attendance-qr-link strong {
+  font-size: 1.05rem;
+}
+
+.attendance-qr-link p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.attendance-page {
+  display: grid;
+  min-height: calc(100vh - 74px);
+  padding: clamp(36px, 8vw, 82px) 18px;
+  place-items: center;
+}
+
+.attendance-panel {
+  width: min(560px, 100%);
+  padding: clamp(24px, 5vw, 42px);
+  background: white;
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 10px 10px 0 var(--ink);
+}
+
+.attendance-panel h1 {
+  margin: 0 0 18px;
+  font-family: var(--font-heading), var(--font-display), Arial, sans-serif;
+  font-size: clamp(2.9rem, 11vw, 5rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.attendance-notice,
+.attendance-closed {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.attendance-notice.success {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.attendance-notice.error,
+.attendance-closed {
+  color: #be123c;
+  background: #fff1f2;
+}
+
+.attendance-activity {
+  margin-bottom: 18px;
+  padding: 16px;
+  background: #fffaf2;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.attendance-activity p,
+.attendance-activity h2 {
+  margin: 0;
+}
+
+.attendance-activity p {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.attendance-activity h2 {
+  margin-top: 4px;
+  font-size: 1.4rem;
+}
+
+.attendance-activity span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.attendance-form {
+  display: grid;
+  gap: 14px;
+}
+
+.attendance-form label {
+  display: grid;
+  gap: 8px;
+  font-weight: 900;
+}
+
+.attendance-form input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font: inherit;
+  background: #fffaf2;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.attendance-honeypot {
+  position: absolute;
+  left: -100vw;
+}
+
 @media (max-width: 880px) {
   .site-header,
   .cta-band {
@@ -1065,6 +1204,7 @@ main {
   .hero,
   .contact-layout,
   .text-grid,
+  .attendance-qr-content,
   .admin-entry-grid,
   .admin-grid {
     grid-template-columns: 1fr;

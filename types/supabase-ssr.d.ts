@@ -72,6 +72,10 @@ declare module "@supabase/ssr" {
       signOut(): Promise<{ error: { message: string } | null }>;
     };
     from<T = Record<string, unknown>>(table: string): SupabaseQueryBuilder<T>;
+    rpc<T = unknown>(
+      fn: string,
+      args?: Record<string, unknown>
+    ): Promise<SupabasePayload<T>>;
     storage: SupabaseStorageClient;
   };
 

@@ -57,7 +57,11 @@ export function AdminEntryForms({ members, meetings }: AdminEntryFormsProps) {
           <h2>Add activity</h2>
           <p>Activities appear in the admin list and can power the calendar.</p>
         </div>
-        <form className="admin-entry-form" action={addMeetingActivity}>
+        <form
+          action={addMeetingActivity}
+          className="admin-entry-form"
+          encType="multipart/form-data"
+        >
           <label>
             Activity
             <input name="activity" required type="text" />
@@ -81,8 +85,8 @@ export function AdminEntryForms({ members, meetings }: AdminEntryFormsProps) {
             </label>
           </div>
           <label>
-            Image URL
-            <input name="imageUrl" placeholder="https://..." type="url" />
+            Event image
+            <input accept=".jpg,.jpeg,.png,image/jpeg,image/png" name="eventImage" type="file" />
           </label>
           <label>
             Image description

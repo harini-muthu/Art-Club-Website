@@ -48,10 +48,16 @@ these files and folders while preserving the same folder structure.
 - `lib/admin-entry-validation.ts`
 - `lib/contact-validation.ts`
 - `lib/event-display.ts`
+- `lib/event-image-storage.ts`
 - `lib/site-data.ts`
 - `lib/supabase/client.ts`
 - `lib/supabase/config.ts`
 - `lib/supabase/server.ts`
+
+## Upload These Planning Docs
+
+- `docs/superpowers/specs/2026-07-17-event-image-uploads-design.md`
+- `docs/superpowers/plans/2026-07-17-event-image-uploads.md`
 
 ## Upload These Test Files
 
@@ -65,6 +71,7 @@ these files and folders while preserving the same folder structure.
 - `__tests__/contact-route.test.ts`
 - `__tests__/contact-validation.test.ts`
 - `__tests__/event-display.test.ts`
+- `__tests__/event-image-storage.test.ts`
 - `__tests__/gallery-lightbox.test.tsx`
 - `__tests__/navigation.test.tsx`
 - `__tests__/site-content.test.ts`
@@ -80,6 +87,7 @@ these files and folders while preserving the same folder structure.
 
 - `supabase/sql/2026-07-17-event-images-public-calendar.sql`
 - `supabase/sql/2026-07-17-admin-edit-delete-policies.sql`
+- `supabase/sql/2026-07-17-event-image-storage.sql`
 
 ## Do Not Upload These
 

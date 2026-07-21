@@ -3,6 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  deleteEventImage,
+  uploadEventImage
+} from "@/lib/event-image-storage";
+import {
+  getSupabaseBrowserConfig
+} from "@/lib/supabase/config";
+import {
+  MeetingSubmission,
   validateAttendanceSubmission,
   validateMeetingUpdateSubmission,
   validateMeetingSubmission,
@@ -56,6 +64,29 @@ function redirectToAdminWithStatus(status: string): never {
 
 function redirectToAdminWithError(error: string): never {
   redirect(`/admin?error=${error}`);
+}
+
+function meetingRowFromSubmission(data: MeetingSubmission) {
+  const {
+    current_image_url: _currentImageUrl,
+    image_file: _imageFile,
+    remove_image: _removeImage,
+    ...meetingRow
+  } = data;
+
+  return meetingRow;
+}
+
+async function removeStoredEventImage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  imageUrl: string | null | undefined
+) {
+  const { url } = getSupabaseBrowserConfig();
+  const result = await deleteEventImage(supabase, imageUrl, url);
+
+  if (!result.ok) {
+    redirectToAdminWithError("activity-save-failed");
+  }
 }
 
 export async function addMemberWithMembership(formData: FormData) {
@@ -158,7 +189,21 @@ export async function addMeetingActivity(formData: FormData) {
   }
 
   const { supabase } = await getAuthorizedAdminClient();
-  const { error } = await supabase.from("meetings").insert(validation.data);
+  const meetingRow = meetingRowFromSubmission(validation.data);
+
+  if (validation.data.image_file) {
+    const upload = await uploadEventImage(supabase, validation.data.image_file, {
+      scopeId: "event"
+    });
+
+    if (!upload.ok) {
+      redirectToAdminWithError("activity-save-failed");
+    }
+
+    meetingRow.image_url = upload.publicUrl;
+  }
+
+  const { error } = await supabase.from("meetings").insert(meetingRow);
 
   if (error) {
     redirectToAdminWithError("activity-save-failed");
@@ -176,9 +221,29 @@ export async function updateMeetingActivity(formData: FormData) {
 
   const { meeting_id: meetingId, ...meetingData } = validation.data;
   const { supabase } = await getAuthorizedAdminClient();
+  const meetingRow = meetingRowFromSubmission(meetingData);
+
+  if (meetingData.image_file) {
+    const upload = await uploadEventImage(supabase, meetingData.image_file, {
+      scopeId: meetingId
+    });
+
+    if (!upload.ok) {
+      redirectToAdminWithError("activity-save-failed");
+    }
+
+    meetingRow.image_url = upload.publicUrl;
+
+    if (meetingData.current_image_url) {
+      await removeStoredEventImage(supabase, meetingData.current_image_url);
+    }
+  } else if (meetingData.remove_image && meetingData.current_image_url) {
+    await removeStoredEventImage(supabase, meetingData.current_image_url);
+  }
+
   const { error } = await supabase
     .from("meetings")
-    .update(meetingData)
+    .update(meetingRow)
     .eq("id", meetingId);
 
   if (error) {
@@ -196,6 +261,16 @@ export async function deleteMeetingActivity(formData: FormData) {
   }
 
   const { supabase } = await getAuthorizedAdminClient();
+  const { data: meeting } = await supabase
+    .from<{ image_url: string | null }>("meetings")
+    .select("image_url")
+    .eq("id", meetingId.trim())
+    .single();
+
+  if (meeting?.image_url) {
+    await removeStoredEventImage(supabase, meeting.image_url);
+  }
+
   const { error } = await supabase
     .from("meetings")
     .delete()

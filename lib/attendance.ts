@@ -1,3 +1,5 @@
+import { getSupabaseBrowserConfig } from "@/lib/supabase/config";
+
 export type AttendanceActivityRpcResponse = {
   status?: string | null;
   meeting_id?: string | null;
@@ -46,34 +48,87 @@ const knownSubmissionStatuses: AttendanceSubmissionStatus[] = [
   "invalid"
 ];
 
+async function callAttendanceRpc(
+  fn: string,
+  args?: Record<string, unknown>
+): Promise<{
+  data: unknown;
+  error: { message: string } | null;
+}> {
+  try {
+    const { url, publishableKey } = getSupabaseBrowserConfig();
+    const response = await fetch(
+      `${url.replace(/\/$/, "")}/rest/v1/rpc/${fn}`,
+      {
+        body: JSON.stringify(args ?? {}),
+        cache: "no-store",
+        headers: {
+          apikey: publishableKey,
+          Authorization: `Bearer ${publishableKey}`,
+          "Content-Type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        data: null,
+        error: {
+          message:
+            typeof data?.message === "string"
+              ? data.message
+              : "Supabase RPC request failed."
+        }
+      };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    return {
+      data: null,
+      error: {
+        message: error instanceof Error ? error.message : "Supabase RPC failed."
+      }
+    };
+  }
+}
+
 export function normalizeAttendeeName(value: string) {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 export function mapAttendanceActivityResponse(
-  response: AttendanceActivityRpcResponse | null | undefined
+  response:
+    | AttendanceActivityRpcResponse
+    | AttendanceActivityRpcResponse[]
+    | null
+    | undefined
 ): AttendancePageState {
+  const activityResponse = Array.isArray(response) ? response[0] : response;
+
   if (
-    response?.status === "open" &&
-    response.meeting_id &&
-    response.activity &&
-    response.meeting_date
+    activityResponse?.status === "open" &&
+    activityResponse.meeting_id &&
+    activityResponse.activity &&
+    activityResponse.meeting_date
   ) {
     return {
       status: "open",
       activity: {
-        id: response.meeting_id,
-        activity: response.activity,
-        meetingDate: response.meeting_date,
-        startsAt: response.starts_at ?? null,
-        location: response.location ?? null
+        id: activityResponse.meeting_id,
+        activity: activityResponse.activity,
+        meetingDate: activityResponse.meeting_date,
+        startsAt: activityResponse.starts_at ?? null,
+        location: activityResponse.location ?? null
       }
     };
   }
 
   return {
     status: "closed",
-    reason: response?.status === "ambiguous" ? "ambiguous" : "closed"
+    reason: activityResponse?.status === "ambiguous" ? "ambiguous" : "closed"
   };
 }
 
@@ -123,31 +178,32 @@ export function attendanceStatusMessage(
 }
 
 export async function getTodayAttendanceActivity(client: AttendanceRpcClient) {
-  if (typeof client.rpc !== "function") {
-    return mapAttendanceActivityResponse(null);
-  }
-
-  const { data, error } = await client.rpc("get_today_attendance_activity");
+  const { data, error } =
+    typeof client.rpc === "function"
+      ? await client.rpc("get_today_attendance_activity")
+      : await callAttendanceRpc("get_today_attendance_activity");
 
   if (error) {
     return mapAttendanceActivityResponse(null);
   }
 
-  return mapAttendanceActivityResponse(data as AttendanceActivityRpcResponse);
+  return mapAttendanceActivityResponse(
+    data as AttendanceActivityRpcResponse | AttendanceActivityRpcResponse[]
+  );
 }
 
 export async function recordTodayAttendance(
   client: AttendanceRpcClient,
   submission: { attendeeName: string; honeypot: string }
 ) {
-  if (typeof client.rpc !== "function") {
-    return "invalid";
-  }
-
-  const { data, error } = await client.rpc("record_today_attendance", {
+  const args = {
     attendee_name: submission.attendeeName,
     honeypot: submission.honeypot
-  });
+  };
+  const { data, error } =
+    typeof client.rpc === "function"
+      ? await client.rpc("record_today_attendance", args)
+      : await callAttendanceRpc("record_today_attendance", args);
 
   return mapAttendanceSubmissionStatus(data, error);
 }

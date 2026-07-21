@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { AttendanceQrPanel } from "@/components/attendance-qr-panel";
 import { AdminEntryForms } from "@/components/admin-entry-forms";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
@@ -13,6 +15,10 @@ import {
   getMembershipStatus
 } from "@/lib/admin-data";
 import { adminLoginRedirectUrl } from "@/lib/admin-auth";
+import {
+  getAttendanceQrOrigin,
+  getLocalLanAddress
+} from "@/lib/request-origin";
 import { createClient } from "@/lib/supabase/server";
 import {
   deleteMeetingActivity,
@@ -147,6 +153,16 @@ async function getAdminDashboardData() {
   };
 }
 
+async function getRequestOrigin() {
+  const requestHeaders = await headers();
+  return getAttendanceQrOrigin({
+    forwardedHost: requestHeaders.get("x-forwarded-host"),
+    forwardedProto: requestHeaders.get("x-forwarded-proto"),
+    host: requestHeaders.get("host"),
+    lanAddress: getLocalLanAddress()
+  });
+}
+
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const params = await searchParams;
   const memberSearch = firstSearchParam(params?.memberSearch) ?? "";
@@ -171,6 +187,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     : error
       ? errorMessages[error]
       : null;
+  const requestOrigin = await getRequestOrigin();
 
   return (
     <section className="admin-shell">
@@ -215,6 +232,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </div>
 
       <AdminEntryForms members={members} meetings={meetings} />
+
+      <AttendanceQrPanel origin={requestOrigin} />
 
       <div className="admin-grid">
         <section className="admin-panel">

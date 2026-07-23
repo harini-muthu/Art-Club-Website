@@ -34,6 +34,14 @@ export type AdminAttendanceRecord = {
   checked_in_at?: string | null;
 };
 
+export type OfficerRecord = {
+  id: string;
+  name: string;
+  role: string;
+  email?: string | null;
+  focus?: string | null;
+};
+
 export type AdminDashboardData = {
   members: AdminMember[];
   memberships: AdminMembership[];
@@ -74,6 +82,41 @@ export function filterMembersBySearch(
       fullName.includes(normalizedSearchTerm) ||
       email.includes(normalizedSearchTerm)
     );
+  });
+}
+
+function getOfficerRolePriority(role: string) {
+  const normalizedRole = role.toLowerCase();
+
+  if (/\bpresident\b/.test(normalizedRole) && !/\bvice president\b/.test(normalizedRole)) {
+    return 0;
+  }
+
+  if (/\bvp\b/.test(normalizedRole) || /\bvice president\b/.test(normalizedRole)) {
+    return 1;
+  }
+
+  if (/\btreasurer\b/.test(normalizedRole)) {
+    return 2;
+  }
+
+  if (/\bsecretary\b/.test(normalizedRole)) {
+    return 3;
+  }
+
+  return 4;
+}
+
+export function sortOfficersForDisplay<T extends OfficerRecord>(officers: T[]) {
+  return [...officers].sort((a, b) => {
+    const priorityDifference =
+      getOfficerRolePriority(a.role) - getOfficerRolePriority(b.role);
+
+    if (priorityDifference !== 0) {
+      return priorityDifference;
+    }
+
+    return a.name.localeCompare(b.name);
   });
 }
 

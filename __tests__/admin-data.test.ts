@@ -3,7 +3,8 @@ import {
   buildAdminDashboardStats,
   filterMembersBySearch,
   getMembershipStatus,
-  getMemberAttendanceCount
+  getMemberAttendanceCount,
+  sortOfficersForDisplay
 } from "@/lib/admin-data";
 
 const referenceDate = new Date("2026-09-15T12:00:00Z");
@@ -76,5 +77,27 @@ describe("admin data helpers", () => {
         "example.edu"
       )
     ).toHaveLength(2);
+  });
+
+  it("sorts free-text officer roles by board priority then name", () => {
+    expect(
+      sortOfficersForDisplay([
+        { id: "other-2", name: "Zoe Allen", role: "Studio Coordinator" },
+        { id: "secretary", name: "Nia Brooks", role: "Secretary" },
+        { id: "president", name: "Maya Chen", role: "Club President" },
+        { id: "vp", name: "Avery Park", role: "VP of Events" },
+        { id: "treasurer", name: "Theo Diaz", role: "Treasurer" },
+        { id: "other-1", name: "Amara Singh", role: "Gallery Lead" },
+        { id: "vice-president", name: "Sam Rivera", role: "Vice President" }
+      ]).map((officer) => officer.id)
+    ).toEqual([
+      "president",
+      "vp",
+      "vice-president",
+      "treasurer",
+      "secretary",
+      "other-1",
+      "other-2"
+    ]);
   });
 });

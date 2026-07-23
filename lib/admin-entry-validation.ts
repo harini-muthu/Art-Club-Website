@@ -29,6 +29,17 @@ export type MemberUpdateSubmission = MemberSubmission & {
   membership_id: string | null;
 };
 
+export type OfficerSubmission = {
+  name: string;
+  role: string;
+  email: string;
+  focus: string | null;
+};
+
+export type OfficerUpdateSubmission = OfficerSubmission & {
+  officer_id: string;
+};
+
 export type MeetingSubmission = {
   activity: string;
   meeting_date: string;
@@ -92,6 +103,10 @@ function isValidOptionalTime(value: string) {
 
 function isValidOptionalEmail(value: string) {
   return value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function isValidRequiredEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function isValidOptionalUrl(value: string) {
@@ -238,6 +253,69 @@ export function validateMemberUpdateSubmission(
           ? expiresOn
           : memberData.membership.expires_on
       }
+    }
+  };
+}
+
+export function validateOfficerSubmission(
+  formData: FormData
+): ValidationResult<OfficerSubmission> {
+  const name = readField(formData, "officerName");
+  const role = readField(formData, "officerRole");
+  const email = readField(formData, "officerEmail").toLowerCase();
+  const focus = readField(formData, "officerFocus");
+  const fieldErrors: FieldErrors = {};
+
+  if (!name) {
+    fieldErrors.officerName = "Enter the officer's name.";
+  }
+
+  if (!role) {
+    fieldErrors.officerRole = "Enter the officer's title.";
+  }
+
+  if (!isValidRequiredEmail(email)) {
+    fieldErrors.officerEmail = "Enter a valid officer email.";
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, fieldErrors };
+  }
+
+  return {
+    ok: true,
+    data: {
+      name,
+      role,
+      email,
+      focus: nullIfBlank(focus)
+    }
+  };
+}
+
+export function validateOfficerUpdateSubmission(
+  formData: FormData
+): ValidationResult<OfficerUpdateSubmission> {
+  const officerId = readField(formData, "officerId");
+  const validation = validateOfficerSubmission(formData);
+  const fieldErrors: FieldErrors = {};
+
+  if (!officerId) {
+    fieldErrors.officerId = "Choose an officer.";
+  }
+
+  if (!validation.ok || Object.keys(fieldErrors).length > 0) {
+    if (!validation.ok) {
+      Object.assign(fieldErrors, validation.fieldErrors);
+    }
+    return { ok: false, fieldErrors };
+  }
+
+  return {
+    ok: true,
+    data: {
+      officer_id: officerId,
+      ...validation.data
     }
   };
 }

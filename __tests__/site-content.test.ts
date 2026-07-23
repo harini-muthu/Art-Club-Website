@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { events, galleryPhotos, navItems, officers } from "@/lib/site-data";
+import { events, galleryPhotos, navItems } from "@/lib/site-data";
 import { contactPurposeOptions } from "@/lib/contact-validation";
 
 describe("public site content model", () => {
@@ -17,7 +17,6 @@ describe("public site content model", () => {
     expect(events[0]).toMatchObject({ featured: true, status: "completed" });
     expect(events.every((event) => event.semester === "Spring 2026")).toBe(true);
     expect(events.every((event) => event.status === "completed")).toBe(true);
-    expect(officers).toHaveLength(4);
     expect(galleryPhotos).toHaveLength(8);
     expect(galleryPhotos[0]).toMatchObject({
       artist: expect.any(String),

@@ -11,6 +11,8 @@ import {
 } from "@/lib/supabase/config";
 import {
   MeetingSubmission,
+  validateOfficerSubmission,
+  validateOfficerUpdateSubmission,
   validateAttendanceSubmission,
   validateMeetingUpdateSubmission,
   validateMeetingSubmission,
@@ -41,19 +43,28 @@ async function getAuthorizedAdminClient() {
     redirect(adminLoginRedirectUrl("missing-session"));
   }
 
-  const { data: officerProfile } = await supabase
-    .from("officer_profiles")
-    .select("full_name, role")
-    .eq("auth_user_id", user.id)
+  const userEmail = user.email?.trim().toLowerCase();
+
+  if (!userEmail) {
+    redirect(adminLoginRedirectUrl("missing-profile"));
+  }
+
+  const { data: officer } = await supabase
+    .from("officers")
+    .select("name, role, email")
+    .eq("email", userEmail)
     .single();
 
-  if (!officerProfile) {
+  if (!officer) {
     redirect(adminLoginRedirectUrl("missing-profile"));
   }
 
   return {
     supabase,
-    officerProfile: officerProfile as OfficerProfile
+    officerProfile: {
+      full_name: officer.name,
+      role: officer.role
+    } as OfficerProfile
   };
 }
 
@@ -64,6 +75,12 @@ function redirectToAdminWithStatus(status: string): never {
 
 function redirectToAdminWithError(error: string): never {
   redirect(`/admin?error=${error}`);
+}
+
+function redirectToAdminWithOfficerStatus(status: string): never {
+  revalidatePath("/admin");
+  revalidatePath("/about");
+  redirect(`/admin?status=${status}`);
 }
 
 function meetingRowFromSubmission(data: MeetingSubmission) {
@@ -179,6 +196,76 @@ export async function deleteMember(formData: FormData) {
   }
 
   redirectToAdminWithStatus("member-deleted");
+}
+
+export async function addOfficer(formData: FormData) {
+  const validation = validateOfficerSubmission(formData);
+
+  if (!validation.ok) {
+    redirectToAdminWithError("officer-invalid");
+  }
+
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase.from("officers").insert(validation.data);
+
+  if (error) {
+    redirectToAdminWithError("officer-save-failed");
+  }
+
+  redirectToAdminWithOfficerStatus("officer-added");
+}
+
+export async function updateOfficer(formData: FormData) {
+  const validation = validateOfficerUpdateSubmission(formData);
+
+  if (!validation.ok) {
+    redirectToAdminWithError("officer-invalid");
+  }
+
+  const { officer_id: officerId, ...officerRow } = validation.data;
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase
+    .from("officers")
+    .update(officerRow)
+    .eq("id", officerId);
+
+  if (error) {
+    redirectToAdminWithError("officer-save-failed");
+  }
+
+  redirectToAdminWithOfficerStatus("officer-updated");
+}
+
+export async function deleteOfficer(formData: FormData) {
+  const officerId = formData.get("officerId");
+
+  if (typeof officerId !== "string" || !officerId.trim()) {
+    redirectToAdminWithError("officer-invalid");
+  }
+
+  const { supabase } = await getAuthorizedAdminClient();
+  const { count, error: countError } = await supabase
+    .from("officers")
+    .select("id", { count: "exact", head: true });
+
+  if (countError || typeof count !== "number") {
+    redirectToAdminWithError("officer-save-failed");
+  }
+
+  if (count <= 1) {
+    redirectToAdminWithError("officer-final-delete");
+  }
+
+  const { error } = await supabase
+    .from("officers")
+    .delete()
+    .eq("id", officerId.trim());
+
+  if (error) {
+    redirectToAdminWithError("officer-save-failed");
+  }
+
+  redirectToAdminWithOfficerStatus("officer-deleted");
 }
 
 export async function addMeetingActivity(formData: FormData) {

@@ -12,7 +12,9 @@ import {
   buildAdminDashboardStats,
   filterMembersBySearch,
   getMemberAttendanceCount,
-  getMembershipStatus
+  getMembershipStatus,
+  OfficerRecord,
+  sortOfficersForDisplay
 } from "@/lib/admin-data";
 import { adminLoginRedirectUrl } from "@/lib/admin-auth";
 import {
@@ -23,9 +25,12 @@ import { createClient } from "@/lib/supabase/server";
 import {
   deleteMeetingActivity,
   deleteMember,
+  deleteOfficer,
   signOutAdmin,
+  updateOfficer,
   updateMeetingActivity,
-  updateMemberWithMembership
+  updateMemberWithMembership,
+  addOfficer
 } from "@/app/admin/actions";
 
 export const metadata = {
@@ -33,7 +38,7 @@ export const metadata = {
 };
 
 type OfficerProfile = {
-  full_name: string;
+  name: string;
   role: string;
 };
 
@@ -78,7 +83,10 @@ const statusMessages: Record<string, string> = {
   "attendance-added": "Attendance recorded.",
   "member-added": "Member and membership added.",
   "member-deleted": "Member deleted.",
-  "member-updated": "Member updated."
+  "member-updated": "Member updated.",
+  "officer-added": "Officer added.",
+  "officer-deleted": "Officer deleted.",
+  "officer-updated": "Officer updated."
 };
 
 const errorMessages: Record<string, string> = {
@@ -87,7 +95,10 @@ const errorMessages: Record<string, string> = {
   "attendance-invalid": "Choose a meeting and identify the attendee.",
   "attendance-save-failed": "Attendance could not be saved. Check Supabase policies.",
   "member-invalid": "Check the member fields and try again.",
-  "member-save-failed": "Member could not be saved. Check Supabase policies."
+  "member-save-failed": "Member could not be saved. Check Supabase policies.",
+  "officer-final-delete": "Keep at least one officer so admin access is not locked out.",
+  "officer-invalid": "Check the officer fields and try again.",
+  "officer-save-failed": "Officer could not be saved. Check Supabase policies."
 };
 
 type AdminPageProps = {
@@ -108,10 +119,16 @@ async function getAdminDashboardData() {
     redirect(adminLoginRedirectUrl("missing-session"));
   }
 
+  const userEmail = user.email?.trim().toLowerCase();
+
+  if (!userEmail) {
+    redirect(adminLoginRedirectUrl("missing-profile"));
+  }
+
   const { data: officerProfile } = await supabase
-    .from("officer_profiles")
-    .select("full_name, role")
-    .eq("auth_user_id", user.id)
+    .from("officers")
+    .select("name, role, email")
+    .eq("email", userEmail)
     .single();
 
   if (!officerProfile) {
@@ -122,6 +139,7 @@ async function getAdminDashboardData() {
     membersResult,
     membershipsResult,
     meetingsResult,
+    officersResult,
     attendanceResult
   ] = await Promise.all([
     supabase
@@ -139,6 +157,10 @@ async function getAdminDashboardData() {
       )
       .order("meeting_date", { ascending: false }),
     supabase
+      .from("officers")
+      .select("id, name, role, email, focus")
+      .order("name", { ascending: true }),
+    supabase
       .from("attendance_records")
       .select("member_id, attendee_name, checked_in_at")
       .order("checked_in_at", { ascending: false })
@@ -149,6 +171,9 @@ async function getAdminDashboardData() {
     members: (membersResult.data ?? []) as AdminMember[],
     memberships: (membershipsResult.data ?? []) as AdminMembership[],
     meetings: (meetingsResult.data ?? []) as AdminMeeting[],
+    officers: sortOfficersForDisplay(
+      (officersResult.data ?? []) as OfficerRecord[]
+    ),
     attendanceRecords: (attendanceResult.data ?? []) as AdminAttendanceRecord[]
   };
 }
@@ -173,6 +198,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     members,
     memberships,
     meetings,
+    officers,
     attendanceRecords
   } = await getAdminDashboardData();
   const stats = buildAdminDashboardStats({
@@ -196,7 +222,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <p className="eyebrow">Officer dashboard</p>
           <h1>Club admin</h1>
           <p>
-            Signed in as {officerProfile.full_name} ({officerProfile.role}).
+            Signed in as {officerProfile.name} ({officerProfile.role}).
           </p>
         </div>
         <form action={signOutAdmin}>
@@ -236,6 +262,111 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       <AttendanceQrPanel origin={requestOrigin} />
 
       <div className="admin-grid">
+        <section className="admin-panel">
+          <div className="admin-panel-heading">
+            <h2>Officers</h2>
+            <p>Officer emails grant admin access and are not shown publicly.</p>
+          </div>
+          <form className="admin-entry-form inline" action={addOfficer}>
+            <label>
+              Name
+              <input name="officerName" required type="text" />
+            </label>
+            <label>
+              Title
+              <input name="officerRole" required type="text" />
+            </label>
+            <label>
+              Email
+              <input name="officerEmail" required type="email" />
+            </label>
+            <label>
+              Focus
+              <textarea name="officerFocus" rows={3} />
+            </label>
+            <button className="button primary" type="submit">
+              Add officer
+            </button>
+          </form>
+          {officers.length ? (
+            <div className="admin-list">
+              {officers.map((officer) => (
+                <article className="admin-row compact editable" key={officer.id}>
+                  <div className="admin-row-summary compact">
+                    <div>
+                      <h3>{officer.name}</h3>
+                      <p>{officer.role}</p>
+                    </div>
+                    <div>
+                      <strong>{officer.email}</strong>
+                      <p>{officer.focus || "No focus listed"}</p>
+                    </div>
+                  </div>
+                  <div className="admin-row-actions">
+                    <details>
+                      <summary className="button secondary">Edit</summary>
+                      <form action={updateOfficer} className="admin-entry-form inline">
+                        <input name="officerId" type="hidden" value={officer.id} />
+                        <label>
+                          Name
+                          <input
+                            defaultValue={officer.name}
+                            name="officerName"
+                            required
+                            type="text"
+                          />
+                        </label>
+                        <label>
+                          Title
+                          <input
+                            defaultValue={officer.role}
+                            name="officerRole"
+                            required
+                            type="text"
+                          />
+                        </label>
+                        <label>
+                          Email
+                          <input
+                            defaultValue={officer.email ?? ""}
+                            name="officerEmail"
+                            required
+                            type="email"
+                          />
+                        </label>
+                        <label>
+                          Focus
+                          <textarea
+                            defaultValue={officer.focus ?? ""}
+                            name="officerFocus"
+                            rows={3}
+                          />
+                        </label>
+                        <button className="button primary" type="submit">
+                          Save officer
+                        </button>
+                      </form>
+                    </details>
+                    <form action={deleteOfficer}>
+                      <input name="officerId" type="hidden" value={officer.id} />
+                      <ConfirmSubmitButton
+                        className="button danger"
+                        message={`Delete ${
+                          officer.name ?? "this officer"
+                        }? They will lose admin access.`}
+                      >
+                        Delete
+                      </ConfirmSubmitButton>
+                    </form>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="admin-empty">No officers yet.</p>
+          )}
+        </section>
+
         <section className="admin-panel">
           <div className="admin-panel-heading">
             <h2>Members</h2>

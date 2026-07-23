@@ -18,12 +18,6 @@ export type EventItem = {
   featured?: boolean;
 };
 
-export type Officer = {
-  name: string;
-  role: string;
-  focus: string;
-};
-
 export type GalleryPhoto = {
   id: string;
   title: string;
@@ -97,29 +91,6 @@ export const events: EventItem[] = [
     imageTone: "amber",
     semester: "Spring 2026",
     status: "completed"
-  }
-];
-
-export const officers: Officer[] = [
-  {
-    name: "Maya Chen",
-    role: "President",
-    focus: "Club direction, officer coordination, and campus partnerships"
-  },
-  {
-    name: "Jordan Patel",
-    role: "Events Lead",
-    focus: "Showcases, workshops, room bookings, and event logistics"
-  },
-  {
-    name: "Sam Rivera",
-    role: "Gallery Lead",
-    focus: "Photo curation, captions, member highlights, and archives"
-  },
-  {
-    name: "Avery Brooks",
-    role: "Outreach Lead",
-    focus: "Contact requests, collaborations, and new member questions"
   }
 ];
 

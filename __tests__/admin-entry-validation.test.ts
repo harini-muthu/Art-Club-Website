@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   getMembershipTerm,
+  validateOfficerSubmission,
+  validateOfficerUpdateSubmission,
   validateAttendanceSubmission,
   validateMeetingUpdateSubmission,
   validateMeetingSubmission,
@@ -14,6 +16,62 @@ function formData(values: Record<string, string | File>) {
 }
 
 describe("admin entry validation", () => {
+  it("builds an officer row from free-text fields and normalizes email", () => {
+    expect(
+      validateOfficerSubmission(
+        formData({
+          officerName: "  Harini Muthu  ",
+          officerRole: " VP of Events ",
+          officerEmail: " Officer@Example.EDU ",
+          officerFocus: "  Workshops and showcases  "
+        })
+      )
+    ).toEqual({
+      ok: true,
+      data: {
+        name: "Harini Muthu",
+        role: "VP of Events",
+        email: "officer@example.edu",
+        focus: "Workshops and showcases"
+      }
+    });
+  });
+
+  it("rejects incomplete officer forms and invalid ids", () => {
+    expect(
+      validateOfficerSubmission(
+        formData({
+          officerName: "",
+          officerRole: "",
+          officerEmail: "not-an-email"
+        })
+      )
+    ).toEqual({
+      ok: false,
+      fieldErrors: {
+        officerName: "Enter the officer's name.",
+        officerRole: "Enter the officer's title.",
+        officerEmail: "Enter a valid officer email."
+      }
+    });
+
+    expect(
+      validateOfficerUpdateSubmission(
+        formData({
+          officerId: "",
+          officerName: "Harini Muthu",
+          officerRole: "President",
+          officerEmail: "harini@example.edu"
+        })
+      )
+    ).toEqual({
+      ok: false,
+      fieldErrors: {
+        officerId: "Choose an officer."
+      }
+    });
+  });
+
   it("computes semester and yearly membership dates from the date added", () => {
     expect(getMembershipTerm("semester", new Date("2026-07-17T12:00:00Z"))).toEqual({
       starts_on: "2026-07-17",

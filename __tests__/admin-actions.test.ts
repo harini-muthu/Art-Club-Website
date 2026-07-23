@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  addOfficer,
   addAttendanceRecord,
   addMeetingActivity,
   addMemberWithMembership,
+  deleteOfficer,
   deleteMeetingActivity,
   deleteMember,
+  updateOfficer,
   updateMeetingActivity,
   updateMemberWithMembership
 } from "@/app/admin/actions";
@@ -32,7 +35,7 @@ function formData(values: Record<string, string | File>) {
   return data;
 }
 
-function setupSupabaseMock() {
+function setupSupabaseMock({ officerCount = 2 } = {}) {
   const memberInsert = vi.fn(() => ({
     select: () => ({
       single: async () => ({ data: { id: "member-1" }, error: null })
@@ -60,6 +63,29 @@ function setupSupabaseMock() {
   const meetingSelectEq = vi.fn(() => ({ single: meetingSelectSingle }));
   const meetingSelect = vi.fn(() => ({ eq: meetingSelectEq }));
   const attendanceInsert = vi.fn(async () => ({ error: null }));
+  const officerInsert = vi.fn(async () => ({ error: null }));
+  const officerUpdateEq = vi.fn(async () => ({ error: null }));
+  const officerUpdate = vi.fn(() => ({ eq: officerUpdateEq }));
+  const officerDeleteEq = vi.fn(async () => ({ error: null }));
+  const officerDelete = vi.fn(() => ({ eq: officerDeleteEq }));
+  const officerCountSelect = vi.fn(async () => ({ count: officerCount, error: null }));
+  const officerAuthSingle = vi.fn(async () => ({
+    data: {
+      id: "officer-1",
+      name: "Officer One",
+      role: "President",
+      email: "officer@example.edu"
+    },
+    error: null
+  }));
+  const officerAuthEq = vi.fn(() => ({ single: officerAuthSingle }));
+  const officerSelect = vi.fn((columns?: string, options?: { count?: string; head?: boolean }) => {
+    if (options?.count === "exact" && options.head) {
+      return officerCountSelect();
+    }
+
+    return { eq: officerAuthEq };
+  });
   const memberLookup = vi.fn(() => ({
     eq: () => ({
       single: async () => ({ data: { full_name: "Harini Muthu" }, error: null })
@@ -81,22 +107,18 @@ function setupSupabaseMock() {
   const supabase = {
     auth: {
       getUser: vi.fn(async () => ({
-        data: { user: { id: "auth-user-1" } },
+        data: { user: { id: "auth-user-1", email: "Officer@Example.EDU" } },
         error: null
       })),
       signOut: vi.fn()
     },
     from: vi.fn((table: string) => {
-      if (table === "officer_profiles") {
+      if (table === "officers") {
         return {
-          select: () => ({
-            eq: () => ({
-              single: async () => ({
-                data: { full_name: "Officer One", role: "president" },
-                error: null
-              })
-            })
-          })
+          delete: officerDelete,
+          insert: officerInsert,
+          select: officerSelect,
+          update: officerUpdate
         };
       }
 
@@ -153,6 +175,13 @@ function setupSupabaseMock() {
     membershipInsert,
     membershipUpdate,
     membershipUpdateEq,
+    officerCountSelect,
+    officerDelete,
+    officerDeleteEq,
+    officerInsert,
+    officerSelect,
+    officerUpdate,
+    officerUpdateEq,
     storageFrom,
     storageGetPublicUrl,
     storageRemove,
@@ -272,6 +301,81 @@ describe("admin data entry actions", () => {
       attendee_name: "Harini Muthu"
     });
     expect(revalidatePath).toHaveBeenCalledWith("/admin");
+  });
+
+  it("adds an officer with a private normalized email", async () => {
+    const { officerInsert } = setupSupabaseMock();
+
+    await expect(
+      addOfficer(
+        formData({
+          officerName: "Avery Park",
+          officerRole: "VP of Events",
+          officerEmail: " Avery@Example.EDU ",
+          officerFocus: "Workshops"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin?status=officer-added");
+
+    expect(officerInsert).toHaveBeenCalledWith({
+      name: "Avery Park",
+      role: "VP of Events",
+      email: "avery@example.edu",
+      focus: "Workshops"
+    });
+    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/about");
+  });
+
+  it("updates an officer", async () => {
+    const { officerUpdate, officerUpdateEq } = setupSupabaseMock();
+
+    await expect(
+      updateOfficer(
+        formData({
+          officerId: "officer-2",
+          officerName: "Avery Park",
+          officerRole: "Vice President",
+          officerEmail: "avery@example.edu",
+          officerFocus: ""
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin?status=officer-updated");
+
+    expect(officerUpdate).toHaveBeenCalledWith({
+      name: "Avery Park",
+      role: "Vice President",
+      email: "avery@example.edu",
+      focus: null
+    });
+    expect(officerUpdateEq).toHaveBeenCalledWith("id", "officer-2");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/about");
+  });
+
+  it("deletes an officer after confirming another officer remains", async () => {
+    const { officerCountSelect, officerDelete, officerDeleteEq } =
+      setupSupabaseMock();
+
+    await expect(
+      deleteOfficer(formData({ officerId: "officer-2" }))
+    ).rejects.toThrow("REDIRECT:/admin?status=officer-deleted");
+
+    expect(officerCountSelect).toHaveBeenCalled();
+    expect(officerDelete).toHaveBeenCalled();
+    expect(officerDeleteEq).toHaveBeenCalledWith("id", "officer-2");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/about");
+  });
+
+  it("does not delete the final officer", async () => {
+    const { officerDelete } = setupSupabaseMock({ officerCount: 1 });
+
+    await expect(
+      deleteOfficer(formData({ officerId: "officer-1" }))
+    ).rejects.toThrow("REDIRECT:/admin?error=officer-final-delete");
+
+    expect(officerDelete).not.toHaveBeenCalled();
   });
 
   it("does not write when member form validation fails", async () => {

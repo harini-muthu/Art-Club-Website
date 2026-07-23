@@ -17,10 +17,21 @@ declare module "@supabase/ssr" {
     error: { message: string } | null;
   }>;
 
-  type SupabaseQueryBuilder<T = Record<string, unknown>> = {
+  type SupabaseListPayload<T> = {
+    count?: number | null;
+    data: T[] | null;
+    error: { message: string } | null;
+  };
+
+  type SupabaseQueryBuilder<T = Record<string, unknown>> = PromiseLike<
+    SupabaseListPayload<T>
+  > & {
     delete(): SupabaseFilterBuilder<T>;
     insert(row: unknown): SupabaseMutationBuilder<T>;
-    select(columns: string): SupabaseQueryBuilder<T>;
+    select(
+      columns: string,
+      options?: { count?: string; head?: boolean }
+    ): SupabaseQueryBuilder<T>;
     eq(column: string, value: string): SupabaseQueryBuilder<T>;
     order(
       column: string,

@@ -54,7 +54,7 @@ as $$
   select exists (
     select 1
     from officers
-    where officers.email = lower(auth.email())
+    where officers.email = lower(coalesce(auth.jwt() ->> 'email', ''))
   );
 $$;
 

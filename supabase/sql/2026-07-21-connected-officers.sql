@@ -45,6 +45,8 @@ set
 
 alter table officers enable row level security;
 
+grant select, insert, update, delete on officers to authenticated;
+
 create or replace function is_current_officer()
 returns boolean
 language sql

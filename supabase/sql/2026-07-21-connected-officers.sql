@@ -59,9 +59,16 @@ as $$
 $$;
 
 drop policy if exists "Officers can read officers" on officers;
+drop policy if exists "Officers can read their own officer row" on officers;
 drop policy if exists "Officers can insert officers" on officers;
 drop policy if exists "Officers can update officers" on officers;
 drop policy if exists "Officers can delete officers" on officers;
+
+create policy "Officers can read their own officer row"
+on officers
+for select
+to authenticated
+using (email = lower(coalesce(auth.jwt() ->> 'email', '')));
 
 create policy "Officers can read officers"
 on officers

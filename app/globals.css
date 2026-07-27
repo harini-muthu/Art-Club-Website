@@ -800,6 +800,32 @@ main {
   flex: 0 0 auto;
 }
 
+.admin-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.admin-navigation-link {
+  min-height: 42px;
+  padding: 10px 14px;
+  color: var(--ink);
+  background: #fffaf2;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.admin-navigation-link:hover,
+.admin-navigation-link:focus-visible,
+.admin-navigation-link.active {
+  color: white;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
 .admin-notice {
   margin: 0 0 18px;
   padding: 12px 14px;
@@ -1213,6 +1239,16 @@ main {
   .admin-toolbar,
   .admin-panel-heading {
     flex-direction: column;
+  }
+
+  .admin-navigation {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .admin-navigation-link {
+    flex: 0 0 auto;
   }
 
   .admin-panel-heading p {

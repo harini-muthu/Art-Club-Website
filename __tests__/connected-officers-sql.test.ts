@@ -15,7 +15,9 @@ describe("connected officers SQL", () => {
   });
 
   it("uses officer email as the access source instead of officer profiles", () => {
-    expect(migrationSql).toContain("where officers.email = lower(auth.email())");
+    expect(migrationSql).toContain(
+      "where officers.email = lower(coalesce(auth.jwt() ->> 'email', ''))"
+    );
     expect(migrationSql).toContain("using (is_current_officer())");
     expect(migrationSql).not.toContain("where officer_profiles.auth_user_id = auth.uid()");
   });

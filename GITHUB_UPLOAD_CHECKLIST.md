@@ -8,8 +8,8 @@ the `github-upload-ready` folder as a nested directory.
 
 The following paths must be present in GitHub for the new admin navigation:
 
+- `app/admin/page.tsx`
 - `app/admin/(dashboard)/layout.tsx`
-- `app/admin/(dashboard)/page.tsx`
 - `app/admin/(dashboard)/memberships/page.tsx`
 - `app/admin/(dashboard)/activities/page.tsx`
 - `app/admin/(dashboard)/officers/page.tsx`
@@ -24,9 +24,9 @@ must also be uploaded.
 
 ## Important replacement
 
-Delete the old `app/admin/page.tsx` from the GitHub repository. It is replaced
-by `app/admin/(dashboard)/page.tsx`; keeping both creates a conflicting
-`/admin` route.
+Replace the old `app/admin/page.tsx` in GitHub with the version in this upload
+package. It now contains the condensed overview and navigation links to every
+admin section.
 
 ## Do not upload
 

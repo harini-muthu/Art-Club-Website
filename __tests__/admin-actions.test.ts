@@ -215,7 +215,7 @@ describe("admin data entry actions", () => {
           paidAmount: "25"
         })
       )
-    ).rejects.toThrow("REDIRECT:/admin?status=member-added");
+    ).rejects.toThrow("REDIRECT:/admin/memberships?status=member-added");
 
     expect(memberInsert).toHaveBeenCalledWith({
       full_name: "Harini Muthu",
@@ -230,7 +230,7 @@ describe("admin data entry actions", () => {
       paid_amount: 25,
       added_by: "Officer One"
     });
-    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/memberships");
   });
 
   it("adds a calendar meeting activity with an uploaded event image", async () => {
@@ -253,7 +253,7 @@ describe("admin data entry actions", () => {
           showOnCalendar: "on"
         })
       )
-    ).rejects.toThrow("REDIRECT:/admin?status=activity-added");
+    ).rejects.toThrow("REDIRECT:/admin/activities?status=activity-added");
 
     expect(meetingInsert).toHaveBeenCalledWith({
       activity: "Figure Drawing",
@@ -279,7 +279,7 @@ describe("admin data entry actions", () => {
     expect(storageGetPublicUrl).toHaveBeenCalledWith(
       expect.stringMatching(/^events\/event\/.+-figure-night\.jpg$/)
     );
-    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/activities");
   });
 
   it("records attendance for a selected member", async () => {
@@ -315,7 +315,7 @@ describe("admin data entry actions", () => {
           officerFocus: "Workshops"
         })
       )
-    ).rejects.toThrow("REDIRECT:/admin?status=officer-added");
+    ).rejects.toThrow("REDIRECT:/admin/officers?status=officer-added");
 
     expect(officerInsert).toHaveBeenCalledWith({
       name: "Avery Park",
@@ -323,7 +323,7 @@ describe("admin data entry actions", () => {
       email: "avery@example.edu",
       focus: "Workshops"
     });
-    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/officers");
     expect(revalidatePath).toHaveBeenCalledWith("/about");
   });
 
@@ -340,7 +340,7 @@ describe("admin data entry actions", () => {
           officerFocus: ""
         })
       )
-    ).rejects.toThrow("REDIRECT:/admin?status=officer-updated");
+    ).rejects.toThrow("REDIRECT:/admin/officers?status=officer-updated");
 
     expect(officerUpdate).toHaveBeenCalledWith({
       name: "Avery Park",
@@ -349,7 +349,7 @@ describe("admin data entry actions", () => {
       focus: null
     });
     expect(officerUpdateEq).toHaveBeenCalledWith("id", "officer-2");
-    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/officers");
     expect(revalidatePath).toHaveBeenCalledWith("/about");
   });
 
@@ -359,12 +359,12 @@ describe("admin data entry actions", () => {
 
     await expect(
       deleteOfficer(formData({ officerId: "officer-2" }))
-    ).rejects.toThrow("REDIRECT:/admin?status=officer-deleted");
+    ).rejects.toThrow("REDIRECT:/admin/officers?status=officer-deleted");
 
     expect(officerCountSelect).toHaveBeenCalled();
     expect(officerDelete).toHaveBeenCalled();
     expect(officerDeleteEq).toHaveBeenCalledWith("id", "officer-2");
-    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/officers");
     expect(revalidatePath).toHaveBeenCalledWith("/about");
   });
 
@@ -373,7 +373,7 @@ describe("admin data entry actions", () => {
 
     await expect(
       deleteOfficer(formData({ officerId: "officer-1" }))
-    ).rejects.toThrow("REDIRECT:/admin?error=officer-final-delete");
+    ).rejects.toThrow("REDIRECT:/admin/officers?error=officer-final-delete");
 
     expect(officerDelete).not.toHaveBeenCalled();
   });
@@ -388,7 +388,7 @@ describe("admin data entry actions", () => {
           membershipType: "semester"
         })
       )
-    ).rejects.toThrow("REDIRECT:/admin?error=member-invalid");
+    ).rejects.toThrow("REDIRECT:/admin/memberships?error=member-invalid");
 
     expect(memberInsert).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -413,7 +413,7 @@ describe("admin data entry actions", () => {
           paidAmount: "15"
         })
       )
-    ).rejects.toThrow("REDIRECT:/admin?status=member-updated");
+    ).rejects.toThrow("REDIRECT:/admin/memberships?status=member-updated");
 
     expect(memberUpdate).toHaveBeenCalledWith({
       full_name: "Harini Muthu",
@@ -428,7 +428,7 @@ describe("admin data entry actions", () => {
       paid_amount: 15
     });
     expect(membershipUpdateEq).toHaveBeenCalledWith("id", "membership-1");
-    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/memberships");
   });
 
   it("deletes a member", async () => {
@@ -436,11 +436,11 @@ describe("admin data entry actions", () => {
 
     await expect(
       deleteMember(formData({ memberId: "member-1" }))
-    ).rejects.toThrow("REDIRECT:/admin?status=member-deleted");
+    ).rejects.toThrow("REDIRECT:/admin/memberships?status=member-deleted");
 
     expect(memberDelete).toHaveBeenCalled();
     expect(memberDeleteEq).toHaveBeenCalledWith("id", "member-1");
-    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/memberships");
   });
 
   it("updates a meeting activity and replaces an uploaded image", async () => {
@@ -464,7 +464,7 @@ describe("admin data entry actions", () => {
           showOnCalendar: "on"
         })
       )
-    ).rejects.toThrow("REDIRECT:/admin?status=activity-updated");
+    ).rejects.toThrow("REDIRECT:/admin/activities?status=activity-updated");
 
     expect(meetingUpdate).toHaveBeenCalledWith({
       activity: "Updated Figure Drawing",
@@ -490,7 +490,7 @@ describe("admin data entry actions", () => {
       "events/meeting-1/old-poster.jpg"
     ]);
     expect(meetingUpdateEq).toHaveBeenCalledWith("id", "meeting-1");
-    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/activities");
   });
 
   it("updates a meeting activity and removes its uploaded image", async () => {
@@ -512,7 +512,7 @@ describe("admin data entry actions", () => {
           showOnCalendar: "on"
         })
       )
-    ).rejects.toThrow("REDIRECT:/admin?status=activity-updated");
+    ).rejects.toThrow("REDIRECT:/admin/activities?status=activity-updated");
 
     expect(storageUpload).not.toHaveBeenCalled();
     expect(storageRemove).toHaveBeenCalledWith([
@@ -536,7 +536,7 @@ describe("admin data entry actions", () => {
 
     await expect(
       deleteMeetingActivity(formData({ meetingId: "meeting-1" }))
-    ).rejects.toThrow("REDIRECT:/admin?status=activity-deleted");
+    ).rejects.toThrow("REDIRECT:/admin/activities?status=activity-deleted");
 
     expect(meetingSelectEq).toHaveBeenCalledWith("id", "meeting-1");
     expect(storageRemove).toHaveBeenCalledWith([
@@ -544,6 +544,6 @@ describe("admin data entry actions", () => {
     ]);
     expect(meetingDelete).toHaveBeenCalled();
     expect(meetingDeleteEq).toHaveBeenCalledWith("id", "meeting-1");
-    expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/activities");
   });
 });

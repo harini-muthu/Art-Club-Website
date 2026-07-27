@@ -69,18 +69,32 @@ async function getAuthorizedAdminClient() {
 }
 
 function redirectToAdminWithStatus(status: string): never {
-  revalidatePath("/admin");
-  redirect(`/admin?status=${status}`);
+  const path = status.startsWith("member-")
+    ? "/admin/memberships"
+    : status.startsWith("activity-")
+      ? "/admin/activities"
+      : "/admin";
+
+  revalidatePath(path);
+  redirect(`${path}?status=${status}`);
 }
 
 function redirectToAdminWithError(error: string): never {
-  redirect(`/admin?error=${error}`);
+  const path = error.startsWith("member-")
+    ? "/admin/memberships"
+    : error.startsWith("activity-")
+      ? "/admin/activities"
+      : error.startsWith("officer-")
+        ? "/admin/officers"
+        : "/admin";
+
+  redirect(`${path}?error=${error}`);
 }
 
 function redirectToAdminWithOfficerStatus(status: string): never {
-  revalidatePath("/admin");
+  revalidatePath("/admin/officers");
   revalidatePath("/about");
-  redirect(`/admin?status=${status}`);
+  redirect(`/admin/officers?status=${status}`);
 }
 
 function meetingRowFromSubmission(data: MeetingSubmission) {

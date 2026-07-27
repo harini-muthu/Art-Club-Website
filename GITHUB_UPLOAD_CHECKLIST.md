@@ -1,117 +1,36 @@
 # GitHub Upload Checklist
 
-Use this as the source of truth for what belongs in the GitHub repo. Upload
-these files and folders while preserving the same folder structure.
+`github-upload-ready/` is a complete upload-ready copy of this project.
+Upload its **contents** to the root of the GitHub repository; do not upload
+the `github-upload-ready` folder as a nested directory.
 
-## Upload These Root Files
+## Required admin split files
 
-- `.env.example`
-- `.gitignore`
-- `.npmrc`
-- `GITHUB_UPLOAD_CHECKLIST.md`
-- `README.md`
-- `eslint.config.mjs`
-- `next-env.d.ts`
-- `next.config.mjs`
-- `package.json`
-- `tsconfig.json`
-- `vitest.config.ts`
-- `vitest.setup.ts`
+The following paths must be present in GitHub for the new admin navigation:
 
-## Upload These App Files
+- `app/admin/(dashboard)/layout.tsx`
+- `app/admin/(dashboard)/page.tsx`
+- `app/admin/(dashboard)/memberships/page.tsx`
+- `app/admin/(dashboard)/activities/page.tsx`
+- `app/admin/(dashboard)/officers/page.tsx`
+- `components/admin-navigation.tsx`
+- `components/admin-dashboard-notice.tsx`
+- `lib/admin-dashboard.ts`
+- `lib/admin-dashboard-messages.ts`
 
-- `app/globals.css`
-- `app/layout.tsx`
-- `app/page.tsx`
-- `app/about/page.tsx`
-- `app/admin/actions.ts`
-- `app/admin/page.tsx`
-- `app/admin/login/login-form.tsx`
-- `app/admin/login/page.tsx`
-- `app/api/contact/route.ts`
-- `app/contact/page.tsx`
-- `app/gallery/page.tsx`
+The updated versions of `app/admin/actions.ts`,
+`components/admin-entry-forms.tsx`, `app/globals.css`, and the test files
+must also be uploaded.
 
-## Upload These Component Files
+## Important replacement
 
-- `components/admin-entry-forms.tsx`
-- `components/confirm-submit-button.tsx`
-- `components/contact-form.tsx`
-- `components/gallery-grid.tsx`
-- `components/page-section.tsx`
-- `components/site-header.tsx`
+Delete the old `app/admin/page.tsx` from the GitHub repository. It is replaced
+by `app/admin/(dashboard)/page.tsx`; keeping both creates a conflicting
+`/admin` route.
 
-## Upload These Library Files
+## Do not upload
 
-- `lib/admin-auth.ts`
-- `lib/admin-data.ts`
-- `lib/admin-entry-validation.ts`
-- `lib/contact-validation.ts`
-- `lib/event-display.ts`
-- `lib/event-image-storage.ts`
-- `lib/site-data.ts`
-- `lib/supabase/client.ts`
-- `lib/supabase/config.ts`
-- `lib/supabase/server.ts`
-
-## Upload These Planning Docs
-
-- `docs/superpowers/specs/2026-07-17-event-image-uploads-design.md`
-- `docs/superpowers/plans/2026-07-17-event-image-uploads.md`
-
-## Upload These Test Files
-
-- `__tests__/about-page.test.tsx`
-- `__tests__/admin-actions.test.ts`
-- `__tests__/admin-auth.test.ts`
-- `__tests__/admin-data.test.ts`
-- `__tests__/admin-entry-validation.test.ts`
-- `__tests__/admin-login-form.test.tsx`
-- `__tests__/contact-form.test.tsx`
-- `__tests__/contact-route.test.ts`
-- `__tests__/contact-validation.test.ts`
-- `__tests__/event-display.test.ts`
-- `__tests__/event-image-storage.test.ts`
-- `__tests__/gallery-lightbox.test.tsx`
-- `__tests__/navigation.test.tsx`
-- `__tests__/site-content.test.ts`
-- `__tests__/supabase-client.test.ts`
-- `__tests__/supabase-config.test.ts`
-
-## Upload These Type/Test Stub Files
-
-- `test-stubs/supabase-ssr.ts`
-- `types/supabase-ssr.d.ts`
-
-## Upload These Supabase SQL Files
-
-- `supabase/sql/2026-07-17-event-images-public-calendar.sql`
-- `supabase/sql/2026-07-17-admin-edit-delete-policies.sql`
-- `supabase/sql/2026-07-17-event-image-storage.sql`
-
-## Do Not Upload These
-
-These are local, generated, private, or too large for GitHub:
-
-- `.DS_Store`
-- `.env.local`
-- `.env*.local`
+- `.env.local` or any `.env*.local` file
 - `.git/`
-- `.next/`
-- `.npm-cache/`
-- `.superpowers/`
-- `node_modules/`
-- `out/`
-- `coverage/`
-- `tsconfig.tsbuildinfo`
-
-## Notes
-
-- Keep `.env.example` in GitHub because it shows which environment variables
-  are needed without exposing real secrets.
-- Keep `.env.local` out of GitHub because it can contain real Supabase or email
-  credentials.
-- If `package-lock.json` is generated later, add it only if the project is
-  consistently using npm lockfiles again.
-- After uploading, Vercel should redeploy from the GitHub branch connected to
-  the project.
+- `.next/`, `node_modules/`, `out/`, `coverage/`, or `.npm-cache/`
+- `.superpowers/`, `.DS_Store`, or `tsconfig.tsbuildinfo`

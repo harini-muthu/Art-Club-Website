@@ -8,14 +8,19 @@ import { AdminMeeting, AdminMember } from "@/lib/admin-data";
 type AdminEntryFormsProps = {
   members: AdminMember[];
   meetings: AdminMeeting[];
+  sections?: Array<"member" | "activity" | "attendance">;
 };
 
-export function AdminEntryForms({ members, meetings }: AdminEntryFormsProps) {
+export function AdminEntryForms({
+  members,
+  meetings,
+  sections = ["member", "activity", "attendance"]
+}: AdminEntryFormsProps) {
   const hasMeetings = meetings.length > 0;
 
   return (
     <div className="admin-entry-grid" aria-label="Admin data entry">
-      <section className="admin-panel admin-entry-panel">
+      {sections.includes("member") ? <section className="admin-panel admin-entry-panel">
         <div className="admin-panel-heading">
           <h2>Add member</h2>
           <p>Membership terms are stored with an expiration date.</p>
@@ -50,9 +55,9 @@ export function AdminEntryForms({ members, meetings }: AdminEntryFormsProps) {
             Add member
           </button>
         </form>
-      </section>
+      </section> : null}
 
-      <section className="admin-panel admin-entry-panel">
+      {sections.includes("activity") ? <section className="admin-panel admin-entry-panel">
         <div className="admin-panel-heading">
           <h2>Add activity</h2>
           <p>Activities appear in the admin list and can power the calendar.</p>
@@ -100,9 +105,9 @@ export function AdminEntryForms({ members, meetings }: AdminEntryFormsProps) {
             Add activity
           </button>
         </form>
-      </section>
+      </section> : null}
 
-      <section className="admin-panel admin-entry-panel">
+      {sections.includes("attendance") ? <section className="admin-panel admin-entry-panel">
         <div className="admin-panel-heading">
           <h2>Record attendance</h2>
           <p>Counts update when a member is linked to the check-in.</p>
@@ -138,7 +143,7 @@ export function AdminEntryForms({ members, meetings }: AdminEntryFormsProps) {
             Record attendance
           </button>
         </form>
-      </section>
+      </section> : null}
     </div>
   );
 }

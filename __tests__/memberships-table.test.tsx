@@ -49,6 +49,17 @@ describe("MembershipsTable", () => {
     expect(screen.queryByText("Add a membership term later")).not.toBeInTheDocument();
   });
 
+  it("filters table rows in place without navigating away from the members view", async () => {
+    const user = userEvent.setup();
+    render(<MembershipsTable deleteMember={noOp} members={members} updateMember={noOp} />);
+
+    await user.type(screen.getByRole("searchbox", { name: "Search members" }), "maya");
+
+    expect(screen.getByDisplayValue("Maya Chen")).toBeVisible();
+    expect(screen.queryByDisplayValue("Avery Park")).not.toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Members" })).toBeVisible();
+  });
+
   it("enables only the selected member row and changes its pencil to save", async () => {
     const user = userEvent.setup();
     render(<MembershipsTable deleteMember={noOp} members={members} updateMember={noOp} />);

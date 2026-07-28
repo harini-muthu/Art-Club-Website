@@ -1083,12 +1083,19 @@ main {
 }
 
 .members-table-actions {
+  width: 84px;
+  text-align: center;
+}
+
+.members-table-actions-inner {
   display: flex;
+  justify-content: center;
   gap: 6px;
+  align-items: center;
   white-space: nowrap;
 }
 
-.members-table-actions form {
+.members-table-actions-inner form {
   margin: 0;
 }
 

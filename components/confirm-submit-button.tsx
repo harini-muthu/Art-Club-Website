@@ -1,8 +1,8 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ButtonHTMLAttributes, ReactNode } from "react";
 
-type ConfirmSubmitButtonProps = {
+type ConfirmSubmitButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "className" | "type"> & {
   children: ReactNode;
   className?: string;
   message: string;
@@ -11,7 +11,8 @@ type ConfirmSubmitButtonProps = {
 export function ConfirmSubmitButton({
   children,
   className,
-  message
+  message,
+  ...buttonProps
 }: ConfirmSubmitButtonProps) {
   return (
     <button
@@ -22,6 +23,7 @@ export function ConfirmSubmitButton({
         }
       }}
       type="submit"
+      {...buttonProps}
     >
       {children}
     </button>

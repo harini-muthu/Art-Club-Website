@@ -3,9 +3,9 @@ import { PageSection } from "@/components/page-section";
 import {
   buildPublicEventsFromMeetings,
   buildPublicEventsFromStaticEvents,
+  getPublicEventDisplay,
   PublicEvent,
-  PublicMeetingRow,
-  selectHighlightedEvent
+  PublicMeetingRow
 } from "@/lib/event-display";
 import { clubName, events } from "@/lib/site-data";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/config";
@@ -57,7 +57,19 @@ function EventImage({ event }: { event: PublicEvent }) {
   );
 }
 
-function FeaturedEvent({ event }: { event: PublicEvent }) {
+function FeaturedEvent({ event }: { event?: PublicEvent }) {
+  if (!event) {
+    return (
+      <article className="featured-event tone-violet">
+        <div className="featured-event-copy">
+          <span>Upcoming event</span>
+          <h2>TBD</h2>
+          <p>The next activity will be announced soon.</p>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article
       className={`featured-event tone-${event.imageTone} ${
@@ -73,7 +85,7 @@ function FeaturedEvent({ event }: { event: PublicEvent }) {
         />
       ) : null}
       <div className="featured-event-copy">
-        <span>Closest event</span>
+        <span>Upcoming event</span>
         <h2>{event.title}</h2>
         <p>{event.description}</p>
         <dl>
@@ -97,8 +109,7 @@ function FeaturedEvent({ event }: { event: PublicEvent }) {
 
 export default async function EventsPage() {
   const publicEvents = await getPublicEvents();
-  const featuredEvent = selectHighlightedEvent(publicEvents) ?? publicEvents[0];
-  const otherEvents = publicEvents.filter((event) => event.id !== featuredEvent.id);
+  const { upcomingEvent, pastEvents } = getPublicEventDisplay(publicEvents);
 
   return (
     <>
@@ -119,16 +130,16 @@ export default async function EventsPage() {
             </Link>
           </div>
         </div>
-        <FeaturedEvent event={featuredEvent} />
+        <FeaturedEvent event={upcomingEvent} />
       </section>
 
       <PageSection
         eyebrow="Calendar"
-        title="Club events"
-        intro="A current calendar of art club activities. The highlighted event is the one closest to today."
+        title="Past events"
+        intro="A record of completed art club activities. Upcoming activities appear in the highlighted event panel."
       >
         <div className="event-grid">
-          {otherEvents.map((event) => (
+          {pastEvents.map((event) => (
             <article className="event-card" key={event.id}>
               <EventImage event={event} />
               <div>

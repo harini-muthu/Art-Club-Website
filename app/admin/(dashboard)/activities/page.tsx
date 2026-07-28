@@ -10,7 +10,7 @@ export default async function ActivitiesPage() {
     <>
       <AdminEntryForms members={[]} meetings={meetings} sections={["activity"]} />
       <section className="admin-panel">
-        <div className="admin-panel-heading"><h2>Activities</h2><p>These power both the calendar and attendance check-in.</p></div>
+        <div className="admin-panel-heading"><h2>Activities</h2><p>Future activities can appear in the public upcoming-event panel and power attendance check-in.</p></div>
         {meetings.length ? <div className="admin-list">
           {meetings.map((meeting) => <article className="admin-row compact editable" key={meeting.id}>
             <div className="admin-row-summary compact">
@@ -33,7 +33,7 @@ export default async function ActivitiesPage() {
                   <label>Replace image<input accept=".jpg,.jpeg,.png,image/jpeg,image/png" name="eventImage" type="file" /></label>
                   {meeting.image_url ? <label className="admin-checkbox"><input name="removeImage" type="checkbox" />Remove current image</label> : null}
                   <label>Image description<input defaultValue={meeting.image_alt ?? ""} name="imageAlt" type="text" /></label>
-                  <label className="admin-checkbox"><input defaultChecked={meeting.show_on_calendar !== false} name="showOnCalendar" type="checkbox" />Show on calendar</label>
+                  <label className="admin-checkbox"><input defaultChecked={meeting.show_on_calendar !== false} name="showOnCalendar" type="checkbox" />Publish on events page</label>
                   <button className="button primary" type="submit">Save activity</button>
                 </form>
               </details>

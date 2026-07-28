@@ -67,7 +67,7 @@ export function AdminEntryForms({
       {sections.includes("activity") ? <section className="admin-panel admin-entry-panel">
         <div className="admin-panel-heading">
           <h2>Add activity</h2>
-          <p>Activities appear in the admin list and can power the calendar.</p>
+          <p>Schedule future activities here. Public upcoming activities appear in the highlighted event panel.</p>
         </div>
         <form
           action={addMeetingActivity}
@@ -106,7 +106,7 @@ export function AdminEntryForms({
           </label>
           <label className="admin-checkbox">
             <input defaultChecked name="showOnCalendar" type="checkbox" />
-            Show on calendar
+            Publish on events page
           </label>
           <button className="button primary" type="submit">
             Add activity

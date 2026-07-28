@@ -16,6 +16,7 @@ export default async function ActivitiesPage() {
         {meetings.length ? <div className="admin-list">
           {meetings.map((meeting) => <article className="admin-row compact editable" key={meeting.id}>
             <div className="admin-row-summary compact">
+              <div><h3>{meeting.activity}</h3><p>{formatAdminDate(meeting.meeting_date)}{meeting.starts_at ? ` / ${formatAdminTime(meeting.starts_at)}` : ""}</p></div>
               {meeting.image_url ? <Image
                 alt={meeting.image_alt || `${meeting.activity ?? "Activity"} image`}
                 className="admin-activity-thumbnail"
@@ -24,9 +25,7 @@ export default async function ActivitiesPage() {
                 src={meeting.image_url}
                 width={60}
               /> : null}
-              <div><h3>{meeting.activity}</h3><p>{formatAdminDate(meeting.meeting_date)}{meeting.starts_at ? ` / ${formatAdminTime(meeting.starts_at)}` : ""}</p></div>
-              <div><strong>{meeting.show_on_calendar === false ? "hidden" : "calendar"}</strong><p>{meeting.location || "No location listed"}</p></div>
-              <div><strong>{meeting.attendance_count ?? 0} attendees</strong><p>Saved attendance</p></div>
+              <div><strong>{meeting.attendance_count ?? 0} attendees</strong><p>{meeting.location || "No location listed"}</p></div>
             </div>
             <div className="admin-row-actions">
               <details>

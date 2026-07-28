@@ -1,5 +1,7 @@
 import { AdminEntryForms } from "@/components/admin-entry-forms";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { ActivityScheduleFields } from "@/components/activity-schedule-fields";
+import Image from "next/image";
 import { deleteMeetingActivity, updateMeetingActivity } from "@/app/admin/actions";
 import { formatAdminDate, formatAdminTime, getActivitiesData } from "@/lib/admin-dashboard";
 
@@ -14,8 +16,17 @@ export default async function ActivitiesPage() {
         {meetings.length ? <div className="admin-list">
           {meetings.map((meeting) => <article className="admin-row compact editable" key={meeting.id}>
             <div className="admin-row-summary compact">
+              {meeting.image_url ? <Image
+                alt={meeting.image_alt || `${meeting.activity ?? "Activity"} image`}
+                className="admin-activity-thumbnail"
+                height={60}
+                unoptimized
+                src={meeting.image_url}
+                width={60}
+              /> : null}
               <div><h3>{meeting.activity}</h3><p>{formatAdminDate(meeting.meeting_date)}{meeting.starts_at ? ` / ${formatAdminTime(meeting.starts_at)}` : ""}</p></div>
               <div><strong>{meeting.show_on_calendar === false ? "hidden" : "calendar"}</strong><p>{meeting.location || "No location listed"}</p></div>
+              <div><strong>{meeting.attendance_count ?? 0} attendees</strong><p>Saved attendance</p></div>
             </div>
             <div className="admin-row-actions">
               <details>
@@ -24,12 +35,14 @@ export default async function ActivitiesPage() {
                   <input name="meetingId" type="hidden" value={meeting.id} />
                   <input name="currentImageUrl" type="hidden" value={meeting.image_url ?? ""} />
                   <label>Activity<input defaultValue={meeting.activity ?? ""} name="activity" required type="text" /></label>
-                  <div className="admin-form-grid">
-                    <label>Date<input defaultValue={meeting.meeting_date ?? ""} name="meetingDate" required type="date" /></label>
-                    <label>Starts<input defaultValue={meeting.starts_at ?? ""} name="startsAt" type="time" /></label>
-                    <label>Ends<input defaultValue={meeting.ends_at ?? ""} name="endsAt" type="time" /></label>
-                    <label>Location<input defaultValue={meeting.location ?? ""} name="location" type="text" /></label>
-                  </div>
+                  <ActivityScheduleFields
+                    defaultEndsAt={meeting.ends_at}
+                    defaultLocation={meeting.location}
+                    defaultMeetingDate={meeting.meeting_date}
+                    defaultStartsAt={meeting.starts_at}
+                    meetingId={meeting.id}
+                    meetings={meetings}
+                  />
                   <label>Replace image<input accept=".jpg,.jpeg,.png,image/jpeg,image/png" name="eventImage" type="file" /></label>
                   {meeting.image_url ? <label className="admin-checkbox"><input name="removeImage" type="checkbox" />Remove current image</label> : null}
                   <label>Image description<input defaultValue={meeting.image_alt ?? ""} name="imageAlt" type="text" /></label>

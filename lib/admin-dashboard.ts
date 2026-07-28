@@ -56,7 +56,7 @@ export async function getOverviewData() {
   const [membersResult, membershipsResult, meetingsResult, attendanceResult] = await Promise.all([
     supabase.from("members").select("id, full_name, email, notes").order("full_name", { ascending: true }),
     supabase.from("memberships").select("id, member_id, membership_type, starts_on, expires_on, paid_amount").order("expires_on", { ascending: false }),
-    supabase.from("meetings").select("id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar").order("meeting_date", { ascending: false }),
+    supabase.from("meetings").select("id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar, attendance_count").order("meeting_date", { ascending: false }),
     supabase.from("attendance_records").select("member_id, attendee_name, checked_in_at").order("checked_in_at", { ascending: false })
   ]);
 
@@ -85,7 +85,7 @@ export async function getMembershipsData() {
 
 export async function getActivitiesData() {
   const supabase = await createClient();
-  const { data } = await supabase.from("meetings").select("id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar").order("meeting_date", { ascending: false });
+  const { data } = await supabase.from("meetings").select("id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar, attendance_count").order("meeting_date", { ascending: false });
   return (data ?? []) as AdminMeeting[];
 }
 

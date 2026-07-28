@@ -39,9 +39,9 @@ describe("admin data helpers", () => {
           { id: "meeting-2", show_on_calendar: false }
         ],
         attendanceRecords: [
-          { member_id: "member-1" },
-          { member_id: "member-1" },
-          { member_id: null }
+          { member_id: "member-1", checked_in_at: "2026-09-15T08:00:00Z" },
+          { member_id: "member-1", checked_in_at: "2026-09-16T06:30:00Z" },
+          { member_id: null, checked_in_at: "2026-09-14T23:00:00Z" }
         ]
       },
       referenceDate
@@ -51,7 +51,7 @@ describe("admin data helpers", () => {
       totalMembers: 2,
       activeMembers: 1,
       calendarActivities: 1,
-      attendanceRecords: 3
+      attendanceRecords: 2
     });
   });
 

@@ -85,6 +85,22 @@ export function filterMembersBySearch(
   });
 }
 
+function getPacificDateKey(date: Date) {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value])
+  );
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 function getOfficerRolePriority(role: string) {
   const normalizedRole = role.toLowerCase();
 
@@ -124,6 +140,7 @@ export function buildAdminDashboardStats(
   data: AdminDashboardData,
   now: Date = new Date()
 ) {
+  const today = getPacificDateKey(now);
   const activeMemberIds = new Set(
     data.memberships
       .filter((membership) => getMembershipStatus(membership.expires_on, now) === "active")
@@ -137,6 +154,13 @@ export function buildAdminDashboardStats(
     calendarActivities: data.meetings.filter(
       (meeting) => meeting.show_on_calendar !== false
     ).length,
-    attendanceRecords: data.attendanceRecords.length
+    attendanceRecords: data.attendanceRecords.filter((record) => {
+      if (!record.checked_in_at) {
+        return false;
+      }
+
+      const checkedInAt = new Date(record.checked_in_at);
+      return !Number.isNaN(checkedInAt.valueOf()) && getPacificDateKey(checkedInAt) === today;
+    }).length
   };
 }

@@ -31,8 +31,16 @@ export type AdminMeeting = {
 
 export type AdminAttendanceRecord = {
   member_id: string | null;
+  guest_id?: string | null;
   attendee_name?: string | null;
   checked_in_at?: string | null;
+};
+
+export type AdminGuest = {
+  id: string;
+  full_name?: string | null;
+  notes?: string | null;
+  archived_at?: string | null;
 };
 
 export type OfficerRecord = {

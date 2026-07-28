@@ -1,11 +1,13 @@
 import { AdminEntryForms } from "@/components/admin-entry-forms";
 import { MembershipsTable } from "@/components/memberships-table";
-import { deleteMember, updateMemberWithMembership } from "@/app/admin/actions";
+import { GuestsTable } from "@/components/guests-table";
+import { archiveGuest, archiveGuestsForSemester, deleteMember, updateGuest, updateMemberWithMembership } from "@/app/admin/actions";
 import { getMemberAttendanceCount, getMembershipStatus } from "@/lib/admin-data";
+import { getGuestAttendanceCount } from "@/lib/guest-data";
 import { getMembershipsData, latestMembershipForMember } from "@/lib/admin-dashboard";
 
 export default async function MembershipsPage() {
-  const { members, memberships, attendanceRecords } = await getMembershipsData();
+  const { members, memberships, attendanceRecords, guests } = await getMembershipsData();
 
   return (
     <>
@@ -33,6 +35,7 @@ export default async function MembershipsPage() {
           })}
         />
       </section>
+      <section className="admin-panel"><GuestsTable archiveGuest={archiveGuest} guests={guests.map((guest) => ({ id: guest.id, fullName: guest.full_name ?? "", notes: guest.notes ?? "", attendanceCount: getGuestAttendanceCount(guest.id, attendanceRecords) }))} resetGuests={archiveGuestsForSemester} updateGuest={updateGuest} /></section>
     </>
   );
 }

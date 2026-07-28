@@ -12,7 +12,26 @@ const eventWindowSql = readFileSync(
   "utf8"
 );
 
+const guestSql = readFileSync(
+  join(process.cwd(), "supabase/sql/2026-07-28-guest-attendance.sql"),
+  "utf8"
+);
+
 describe("QR attendance SQL", () => {
+  it("creates active guests and links attendance records", () => {
+    expect(guestSql).toContain("create table if not exists guests");
+    expect(guestSql).toContain("add column if not exists guest_id uuid");
+    expect(guestSql).toContain("where archived_at is null");
+    expect(guestSql).toContain("record_today_attendance(");
+    expect(guestSql).toContain("active_member_id");
+  });
+
+  it("archives guests and promotes only active matching guests", () => {
+    expect(guestSql).toContain("promote_active_guest_to_member");
+    expect(guestSql).toContain("active_guest.archived_at is null");
+    expect(guestSql).toContain("archive_active_guests");
+    expect(guestSql).toContain("set archived_at = now()");
+  });
   it("uses Eastern event windows and returns all active activities", () => {
     expect(eventWindowSql).toContain("America/New_York");
     expect(eventWindowSql).toContain("coalesce(meetings.starts_at, time '00:00')");

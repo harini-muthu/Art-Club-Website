@@ -28,7 +28,7 @@ describe("ActivitiesPage", () => {
         image_url: "https://example.test/open-studio.jpg",
         image_alt: "Open Studio poster",
         attendance_count: 18,
-        show_on_calendar: true
+        location: "Art Room"
       },
       {
         id: "meeting-2",
@@ -49,5 +49,8 @@ describe("ActivitiesPage", () => {
       "src",
       "https://example.test/open-studio.jpg"
     );
+    expect(screen.getByText("Art Room")).toBeVisible();
+    expect(screen.queryByText("calendar")).not.toBeInTheDocument();
+    expect(screen.queryByText("Saved attendance")).not.toBeInTheDocument();
   });
 });

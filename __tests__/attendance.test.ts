@@ -174,7 +174,7 @@ describe("QR attendance helpers", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
-      recordTodayAttendance({}, { attendeeName: "Maya Chen", meetingId: "meeting-1", honeypot: "" })
+      recordTodayAttendance({}, { attendeeName: "Maya Chen", schoolEmail: "maya@school.edu", meetingId: "meeting-1", honeypot: "" })
     ).resolves.toBe("checked-in");
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -182,6 +182,7 @@ describe("QR attendance helpers", () => {
       expect.objectContaining({
         body: JSON.stringify({
           attendee_name: "Maya Chen",
+          school_email: "maya@school.edu",
           meeting_id: "meeting-1",
           honeypot: ""
         }),
@@ -199,7 +200,7 @@ describe("QR attendance helpers", () => {
       reason: "closed"
     });
     await expect(
-      recordTodayAttendance({}, { attendeeName: "Maya Chen", meetingId: "meeting-1", honeypot: "" })
+      recordTodayAttendance({}, { attendeeName: "Maya Chen", schoolEmail: "maya@school.edu", meetingId: "meeting-1", honeypot: "" })
     ).resolves.toBe("invalid");
   });
 });

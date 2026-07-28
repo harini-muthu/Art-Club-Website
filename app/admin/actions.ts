@@ -131,8 +131,7 @@ export async function addMemberWithMembership(formData: FormData) {
 
   const { supabase, officerProfile } = await getAuthorizedAdminClient();
   if (typeof supabase.rpc === "function") {
-    const { data: promotedMemberId, error: promotionError } = await supabase.rpc("promote_active_guest_by_name", {
-      full_name_input: validation.data.member.full_name,
+    const { data: promotedMemberId, error: promotionError } = await supabase.rpc("promote_active_guest_by_email", {
       email_input: validation.data.member.email ?? "",
       notes_input: validation.data.member.notes ?? "",
       membership_type_input: validation.data.membership.membership_type,
@@ -231,10 +230,10 @@ export async function deleteMember(formData: FormData) {
 export async function updateGuest(formData: FormData) {
   const guestId = formData.get("guestId");
   const fullName = formData.get("fullName");
-  const notes = formData.get("notes");
-  if (typeof guestId !== "string" || typeof fullName !== "string" || !guestId || !fullName.trim()) redirectToAdminWithError("member-invalid");
+  const schoolEmail = formData.get("schoolEmail");
+  if (typeof guestId !== "string" || typeof fullName !== "string" || typeof schoolEmail !== "string" || !guestId || !fullName.trim() || !schoolEmail.trim()) redirectToAdminWithError("member-invalid");
   const { supabase } = await getAuthorizedAdminClient();
-  const { error } = await supabase.from("guests").update({ full_name: fullName.trim(), notes: typeof notes === "string" && notes.trim() ? notes.trim() : null }).eq("id", guestId);
+  const { error } = await supabase.from("guests").update({ full_name: fullName.trim(), school_email: schoolEmail.trim().toLowerCase() }).eq("id", guestId);
   if (error) redirectToAdminWithError("member-save-failed");
   redirectToAdminWithStatus("guest-updated");
 }

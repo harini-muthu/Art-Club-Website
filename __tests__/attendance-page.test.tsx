@@ -23,7 +23,7 @@ describe("AttendancePage", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the name-only check-in form when exactly one activity is open today", async () => {
+  it("shows required name and school email fields when exactly one activity is open today", async () => {
     setupRpc({
       status: "open",
       meeting_id: "meeting-1",
@@ -40,6 +40,7 @@ describe("AttendancePage", () => {
     ).toBeVisible();
     expect(screen.getByText("Open Studio")).toBeVisible();
     expect(screen.getByLabelText("Name")).toBeVisible();
+    expect(screen.getByLabelText("School Email")).toBeRequired();
     expect(screen.getByRole("button", { name: "Check in" })).toBeVisible();
     expect(screen.getByDisplayValue("meeting-1")).toHaveAttribute("type", "hidden");
   });

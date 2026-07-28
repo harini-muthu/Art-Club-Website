@@ -26,7 +26,7 @@ describe("admin data helpers", () => {
     ).toBe(2);
   });
 
-  it("builds dashboard totals from members, memberships, meetings, and attendance", () => {
+  it("uses Eastern time when counting today's attendance records", () => {
     const stats = buildAdminDashboardStats(
       {
         members: [{ id: "member-1" }, { id: "member-2" }],
@@ -51,7 +51,7 @@ describe("admin data helpers", () => {
       totalMembers: 2,
       activeMembers: 1,
       calendarActivities: 1,
-      attendanceRecords: 2
+      attendanceRecords: 1
     });
   });
 

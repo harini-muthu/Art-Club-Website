@@ -34,6 +34,18 @@ function formatTime(time?: string | null) {
   }).format(new Date(2026, 0, 1, Number(hours), Number(minutes)));
 }
 
+function activityOptionLabel(activity: {
+  activity: string;
+  startsAt: string | null;
+  location: string | null;
+}) {
+  return [
+    activity.activity,
+    activity.startsAt ? formatTime(activity.startsAt) : null,
+    activity.location
+  ].filter(Boolean).join(" / ");
+}
+
 async function getAttendanceState() {
   const supabase = await createClient();
   return getTodayAttendanceActivity(supabase);
@@ -65,18 +77,36 @@ export default async function AttendancePage({
 
         {state.status === "open" ? (
           <>
-            <div className="attendance-activity">
+            {state.activities.length === 1 ? <div className="attendance-activity">
               <p>Today&apos;s activity</p>
-              <h2>{state.activity.activity}</h2>
+              <h2>{state.activities[0].activity}</h2>
               <span>
-                {formatDate(state.activity.meetingDate)}
-                {state.activity.startsAt
-                  ? ` / ${formatTime(state.activity.startsAt)}`
+                {formatDate(state.activities[0].meetingDate)}
+                {state.activities[0].startsAt
+                  ? ` / ${formatTime(state.activities[0].startsAt)}`
                   : ""}
-                {state.activity.location ? ` / ${state.activity.location}` : ""}
+                {state.activities[0].location ? ` / ${state.activities[0].location}` : ""}
               </span>
-            </div>
+            </div> : <div className="attendance-activity">
+              <p>Choose the activity you are attending</p>
+              <h2>Today&apos;s activities</h2>
+            </div>}
             <form action={recordQrAttendance} className="attendance-form">
+              {state.activities.length === 1 ? (
+                <input name="meetingId" type="hidden" value={state.activities[0].id} />
+              ) : (
+                <label>
+                  Activity
+                  <select defaultValue="" name="meetingId" required>
+                    <option disabled value="">Choose an activity</option>
+                    {state.activities.map((activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activityOptionLabel(activity)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label>
                 Name
                 <input

@@ -34,11 +34,12 @@ describe("QR attendance actions", () => {
     const { rpc } = setupSupabaseMock("checked-in");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "Maya Chen", website: "" }))
+      recordQrAttendance(formData({ attendeeName: "Maya Chen", meetingId: "meeting-1", website: "" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=checked-in");
 
     expect(rpc).toHaveBeenCalledWith("record_today_attendance", {
       attendee_name: "Maya Chen",
+      meeting_id: "meeting-1",
       honeypot: ""
     });
     expect(redirect).toHaveBeenCalledWith("/attendance?status=checked-in");
@@ -48,7 +49,7 @@ describe("QR attendance actions", () => {
     const { rpc } = setupSupabaseMock("checked-in");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "   ", website: "" }))
+      recordQrAttendance(formData({ attendeeName: "   ", meetingId: "meeting-1", website: "" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=invalid");
 
     expect(rpc).not.toHaveBeenCalled();
@@ -58,7 +59,7 @@ describe("QR attendance actions", () => {
     const { rpc } = setupSupabaseMock("checked-in");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "Maya Chen", website: "bot" }))
+      recordQrAttendance(formData({ attendeeName: "Maya Chen", meetingId: "meeting-1", website: "bot" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=invalid");
 
     expect(rpc).not.toHaveBeenCalled();
@@ -68,14 +69,14 @@ describe("QR attendance actions", () => {
     const duplicate = setupSupabaseMock("already-checked-in");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "Maya Chen", website: "" }))
+      recordQrAttendance(formData({ attendeeName: "Maya Chen", meetingId: "meeting-1", website: "" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=already-checked-in");
     expect(duplicate.rpc).toHaveBeenCalledTimes(1);
 
     const closed = setupSupabaseMock("closed");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "Maya Chen", website: "" }))
+      recordQrAttendance(formData({ attendeeName: "Maya Chen", meetingId: "meeting-1", website: "" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=closed");
     expect(closed.rpc).toHaveBeenCalledTimes(1);
   });

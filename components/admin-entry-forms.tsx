@@ -4,6 +4,7 @@ import {
   addMemberWithMembership
 } from "@/app/admin/actions";
 import { AdminMeeting, AdminMember } from "@/lib/admin-data";
+import { ActivityScheduleFields } from "@/components/activity-schedule-fields";
 
 type AdminEntryFormsProps = {
   members: AdminMember[];
@@ -78,24 +79,7 @@ export function AdminEntryForms({
             Activity
             <input name="activity" required type="text" />
           </label>
-          <div className="admin-form-grid">
-            <label>
-              Date
-              <input name="meetingDate" required type="date" />
-            </label>
-            <label>
-              Starts
-              <input defaultValue="18:30" name="startsAt" type="time" />
-            </label>
-            <label>
-              Ends
-              <input name="endsAt" type="time" />
-            </label>
-            <label>
-              Location
-              <input name="location" type="text" />
-            </label>
-          </div>
+          <ActivityScheduleFields meetings={meetings} defaultStartsAt="18:30" />
           <label>
             Event image
             <input accept=".jpg,.jpeg,.png,image/jpeg,image/png" name="eventImage" type="file" />

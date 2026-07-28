@@ -14,15 +14,17 @@ function readField(formData: FormData, field: string) {
 
 export async function recordQrAttendance(formData: FormData) {
   const attendeeName = readField(formData, "attendeeName");
+  const meetingId = readField(formData, "meetingId");
   const honeypot = readField(formData, "website");
 
-  if (!normalizeAttendeeName(attendeeName) || honeypot) {
+  if (!normalizeAttendeeName(attendeeName) || !meetingId || honeypot) {
     redirect("/attendance?status=invalid");
   }
 
   const supabase = await createClient();
   const status = await recordTodayAttendance(supabase, {
     attendeeName,
+    meetingId,
     honeypot
   });
 

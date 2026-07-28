@@ -40,10 +40,37 @@ function TrashIcon() {
 
 export function MembershipsTable({ deleteMember, members, updateMember }: MembershipsTableProps) {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [memberSearch, setMemberSearch] = useState("");
   const updateForms = useRef(new Map<string, HTMLFormElement>());
+  const normalizedSearch = memberSearch.trim().toLowerCase();
+  const visibleMembers = normalizedSearch
+    ? members.filter((member) =>
+        member.fullName.toLowerCase().includes(normalizedSearch) ||
+        member.email.toLowerCase().includes(normalizedSearch)
+      )
+    : members;
 
   return (
-    <div className="members-table-scroll">
+    <>
+      <div className="admin-panel-heading">
+        <h2>Members</h2>
+        <form
+          className="admin-search-form"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <input
+            aria-label="Search members"
+            name="memberSearch"
+            onChange={(event) => setMemberSearch(event.target.value)}
+            placeholder="Search members"
+            type="search"
+            value={memberSearch}
+          />
+          <button className="button secondary" type="submit">Search</button>
+          {memberSearch ? <button className="button secondary" onClick={() => setMemberSearch("")} type="button">Clear</button> : null}
+        </form>
+      </div>
+      {visibleMembers.length ? <div className="members-table-scroll">
       <table className="members-table" aria-label="Members">
         <thead>
           <tr>
@@ -58,7 +85,7 @@ export function MembershipsTable({ deleteMember, members, updateMember }: Member
           </tr>
         </thead>
         <tbody>
-          {members.map((member) => {
+          {visibleMembers.map((member) => {
             const isEditing = editingMemberId === member.id;
             const formId = `member-form-${member.id}`;
 
@@ -90,6 +117,7 @@ export function MembershipsTable({ deleteMember, members, updateMember }: Member
                   <textarea defaultValue={member.notes} disabled={!isEditing} form={formId} id={`notes-${member.id}`} name="notes" rows={2} />
                 </td>
                 <td className="members-table-actions">
+                  <div className="members-table-actions-inner">
                   <form
                     action={updateMember}
                     id={formId}
@@ -126,12 +154,14 @@ export function MembershipsTable({ deleteMember, members, updateMember }: Member
                     <input name="memberId" type="hidden" value={member.id} />
                     <ConfirmSubmitButton aria-label={`Delete ${member.fullName}`} className="icon-button danger" message={`Delete ${member.fullName}? This cannot be undone.`} title={`Delete ${member.fullName}`}><TrashIcon /></ConfirmSubmitButton>
                   </form>
+                  </div>
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
-    </div>
+      </div> : <p className="admin-empty">No members match that search.</p>}
+    </>
   );
 }

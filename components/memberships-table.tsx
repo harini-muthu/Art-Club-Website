@@ -95,12 +95,12 @@ export function MembershipsTable({ deleteMember, members, updateMember }: Member
                     <input name="originalMembershipType" type="hidden" value={member.membershipType} />
                     <input name="startsOn" type="hidden" value={member.startsOn} />
                     <input name="expiresOn" type="hidden" value={member.expiresOn} />
-                    {isEditing ? (
-                      <button aria-label={`Save ${member.fullName}`} className="icon-button" title={`Save ${member.fullName}`} type="submit"><SaveIcon /></button>
-                    ) : (
-                      <button aria-label={`Edit ${member.fullName}`} className="icon-button" onClick={() => setEditingMemberId(member.id)} title={`Edit ${member.fullName}`} type="button"><PencilIcon /></button>
-                    )}
                   </form>
+                  {isEditing ? (
+                    <button aria-label={`Save ${member.fullName}`} className="icon-button" form={formId} title={`Save ${member.fullName}`} type="submit"><SaveIcon /></button>
+                  ) : (
+                    <button aria-label={`Edit ${member.fullName}`} className="icon-button" onClick={() => setEditingMemberId(member.id)} title={`Edit ${member.fullName}`} type="button"><PencilIcon /></button>
+                  )}
                   <form action={deleteMember}>
                     <input name="memberId" type="hidden" value={member.id} />
                     <ConfirmSubmitButton aria-label={`Delete ${member.fullName}`} className="icon-button danger" message={`Delete ${member.fullName}? This cannot be undone.`} title={`Delete ${member.fullName}`}><TrashIcon /></ConfirmSubmitButton>

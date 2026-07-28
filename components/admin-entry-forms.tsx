@@ -19,7 +19,14 @@ export function AdminEntryForms({
   const hasMeetings = meetings.length > 0;
 
   return (
-    <div className="admin-entry-grid" aria-label="Admin data entry">
+    <div
+      className={
+        sections.length === 1
+          ? "admin-entry-grid admin-entry-grid-single"
+          : "admin-entry-grid"
+      }
+      aria-label="Admin data entry"
+    >
       {sections.includes("member") ? <section className="admin-panel admin-entry-panel">
         <div className="admin-panel-heading">
           <h2>Add member</h2>

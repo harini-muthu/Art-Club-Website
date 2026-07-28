@@ -63,6 +63,14 @@ describe("MembershipsTable", () => {
     expect(screen.getByRole("button", { name: "Save Avery Park" })).toBeVisible();
   });
 
+  it("keeps the edit trigger outside the update form", () => {
+    render(<MembershipsTable deleteMember={noOp} members={members} updateMember={noOp} />);
+
+    expect(
+      screen.getByRole("button", { name: "Edit Avery Park" }).closest("form")
+    ).toBeNull();
+  });
+
   it("asks for confirmation before the icon-only delete control submits", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<MembershipsTable deleteMember={noOp} members={members} updateMember={noOp} />);

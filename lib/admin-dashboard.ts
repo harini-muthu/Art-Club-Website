@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import {
   AdminAttendanceRecord,
+  AdminGuest,
   AdminMeeting,
   AdminMember,
   AdminMembership,
@@ -70,16 +71,18 @@ export async function getOverviewData() {
 
 export async function getMembershipsData() {
   const supabase = await createClient();
-  const [membersResult, membershipsResult, attendanceResult] = await Promise.all([
+  const [membersResult, membershipsResult, attendanceResult, guestsResult] = await Promise.all([
     supabase.from("members").select("id, full_name, email, notes").order("full_name", { ascending: true }),
     supabase.from("memberships").select("id, member_id, membership_type, starts_on, expires_on, paid_amount").order("expires_on", { ascending: false }),
-    supabase.from("attendance_records").select("member_id, attendee_name, checked_in_at").order("checked_in_at", { ascending: false })
+    supabase.from("attendance_records").select("member_id, guest_id, attendee_name, checked_in_at").order("checked_in_at", { ascending: false }),
+    supabase.from("guests").select("id, full_name, notes, archived_at").order("full_name", { ascending: true })
   ]);
 
   return {
     members: (membersResult.data ?? []) as AdminMember[],
     memberships: (membershipsResult.data ?? []) as AdminMembership[],
-    attendanceRecords: (attendanceResult.data ?? []) as AdminAttendanceRecord[]
+    attendanceRecords: (attendanceResult.data ?? []) as AdminAttendanceRecord[],
+    guests: ((guestsResult.data ?? []) as AdminGuest[]).filter((guest) => !guest.archived_at)
   };
 }
 

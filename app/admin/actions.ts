@@ -71,6 +71,8 @@ async function getAuthorizedAdminClient() {
 function redirectToAdminWithStatus(status: string): never {
   const path = status.startsWith("member-")
     ? "/admin/memberships"
+    : status.startsWith("guest-") || status.startsWith("guests-")
+      ? "/admin/memberships"
     : status.startsWith("activity-")
       ? "/admin/activities"
       : "/admin";
@@ -128,6 +130,20 @@ export async function addMemberWithMembership(formData: FormData) {
   }
 
   const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  if (typeof supabase.rpc === "function") {
+    const { data: promotedMemberId, error: promotionError } = await supabase.rpc("promote_active_guest_by_name", {
+      full_name_input: validation.data.member.full_name,
+      email_input: validation.data.member.email ?? "",
+      notes_input: validation.data.member.notes ?? "",
+      membership_type_input: validation.data.membership.membership_type,
+      starts_on_input: validation.data.membership.starts_on,
+      expires_on_input: validation.data.membership.expires_on,
+      paid_amount_input: validation.data.membership.paid_amount,
+      added_by_input: officerProfile.full_name
+    });
+    if (promotionError) redirectToAdminWithError("member-save-failed");
+    if (promotedMemberId) redirectToAdminWithStatus("member-linked-guest");
+  }
   const { data: member, error: memberError } = await supabase
     .from<{ id: string }>("members")
     .insert(validation.data.member)
@@ -210,6 +226,33 @@ export async function deleteMember(formData: FormData) {
   }
 
   redirectToAdminWithStatus("member-deleted");
+}
+
+export async function updateGuest(formData: FormData) {
+  const guestId = formData.get("guestId");
+  const fullName = formData.get("fullName");
+  const notes = formData.get("notes");
+  if (typeof guestId !== "string" || typeof fullName !== "string" || !guestId || !fullName.trim()) redirectToAdminWithError("member-invalid");
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase.from("guests").update({ full_name: fullName.trim(), notes: typeof notes === "string" && notes.trim() ? notes.trim() : null }).eq("id", guestId);
+  if (error) redirectToAdminWithError("member-save-failed");
+  redirectToAdminWithStatus("guest-updated");
+}
+
+export async function archiveGuest(formData: FormData) {
+  const guestId = formData.get("guestId");
+  if (typeof guestId !== "string" || !guestId) redirectToAdminWithError("member-invalid");
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase.from("guests").update({ archived_at: new Date().toISOString() }).eq("id", guestId);
+  if (error) redirectToAdminWithError("member-save-failed");
+  redirectToAdminWithStatus("guest-archived");
+}
+
+export async function archiveGuestsForSemester() {
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase.rpc("archive_active_guests");
+  if (error) redirectToAdminWithError("member-save-failed");
+  redirectToAdminWithStatus("guests-reset");
 }
 
 export async function addOfficer(formData: FormData) {

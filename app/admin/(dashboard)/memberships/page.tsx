@@ -35,7 +35,7 @@ export default async function MembershipsPage() {
           })}
         />
       </section>
-      <section className="admin-panel"><GuestsTable archiveGuest={archiveGuest} guests={guests.map((guest) => ({ id: guest.id, fullName: guest.full_name ?? "", notes: guest.notes ?? "", attendanceCount: getGuestAttendanceCount(guest.id, attendanceRecords) }))} resetGuests={archiveGuestsForSemester} updateGuest={updateGuest} /></section>
+      <section className="admin-panel"><GuestsTable archiveGuest={archiveGuest} guests={guests.map((guest) => ({ id: guest.id, fullName: guest.full_name ?? "", schoolEmail: guest.school_email ?? "", attendanceCount: getGuestAttendanceCount(guest.id, attendanceRecords) }))} resetGuests={archiveGuestsForSemester} updateGuest={updateGuest} /></section>
     </>
   );
 }

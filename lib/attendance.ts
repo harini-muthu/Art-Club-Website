@@ -205,10 +205,11 @@ export async function getTodayAttendanceActivity(client: AttendanceRpcClient) {
 
 export async function recordTodayAttendance(
   client: AttendanceRpcClient,
-  submission: { attendeeName: string; meetingId: string; honeypot: string }
+  submission: { attendeeName: string; schoolEmail: string; meetingId: string; honeypot: string }
 ) {
   const args = {
     attendee_name: submission.attendeeName,
+    school_email: submission.schoolEmail,
     meeting_id: submission.meetingId,
     honeypot: submission.honeypot
   };

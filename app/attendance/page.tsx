@@ -117,6 +117,16 @@ export default async function AttendancePage({
                   type="text"
                 />
               </label>
+              <label>
+                School Email
+                <input
+                  autoComplete="email"
+                  maxLength={254}
+                  name="schoolEmail"
+                  required
+                  type="text"
+                />
+              </label>
               <label className="attendance-honeypot">
                 Website
                 <input

@@ -30,15 +30,16 @@ describe("QR attendance actions", () => {
     vi.clearAllMocks();
   });
 
-  it("records a valid attendee name through the public attendance RPC", async () => {
+  it("records a name and school email through the public attendance RPC", async () => {
     const { rpc } = setupSupabaseMock("checked-in");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "Maya Chen", meetingId: "meeting-1", website: "" }))
+      recordQrAttendance(formData({ attendeeName: "Maya Chen", schoolEmail: " Maya@School.edu ", meetingId: "meeting-1", website: "" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=checked-in");
 
     expect(rpc).toHaveBeenCalledWith("record_today_attendance", {
       attendee_name: "Maya Chen",
+      school_email: "Maya@School.edu",
       meeting_id: "meeting-1",
       honeypot: ""
     });
@@ -49,7 +50,17 @@ describe("QR attendance actions", () => {
     const { rpc } = setupSupabaseMock("checked-in");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "   ", meetingId: "meeting-1", website: "" }))
+      recordQrAttendance(formData({ attendeeName: "   ", schoolEmail: "maya@school.edu", meetingId: "meeting-1", website: "" }))
+    ).rejects.toThrow("REDIRECT:/attendance?status=invalid");
+
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("does not call Supabase when school email is blank", async () => {
+    const { rpc } = setupSupabaseMock("checked-in");
+
+    await expect(
+      recordQrAttendance(formData({ attendeeName: "Maya Chen", schoolEmail: "   ", meetingId: "meeting-1", website: "" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=invalid");
 
     expect(rpc).not.toHaveBeenCalled();
@@ -59,7 +70,7 @@ describe("QR attendance actions", () => {
     const { rpc } = setupSupabaseMock("checked-in");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "Maya Chen", meetingId: "meeting-1", website: "bot" }))
+      recordQrAttendance(formData({ attendeeName: "Maya Chen", schoolEmail: "maya@school.edu", meetingId: "meeting-1", website: "bot" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=invalid");
 
     expect(rpc).not.toHaveBeenCalled();
@@ -69,14 +80,14 @@ describe("QR attendance actions", () => {
     const duplicate = setupSupabaseMock("already-checked-in");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "Maya Chen", meetingId: "meeting-1", website: "" }))
+      recordQrAttendance(formData({ attendeeName: "Maya Chen", schoolEmail: "maya@school.edu", meetingId: "meeting-1", website: "" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=already-checked-in");
     expect(duplicate.rpc).toHaveBeenCalledTimes(1);
 
     const closed = setupSupabaseMock("closed");
 
     await expect(
-      recordQrAttendance(formData({ attendeeName: "Maya Chen", meetingId: "meeting-1", website: "" }))
+      recordQrAttendance(formData({ attendeeName: "Maya Chen", schoolEmail: "maya@school.edu", meetingId: "meeting-1", website: "" }))
     ).rejects.toThrow("REDIRECT:/attendance?status=closed");
     expect(closed.rpc).toHaveBeenCalledTimes(1);
   });

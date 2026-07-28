@@ -17,6 +17,11 @@ const guestSql = readFileSync(
   "utf8"
 );
 
+const schoolEmailSql = readFileSync(
+  join(process.cwd(), "supabase/sql/2026-07-28-attendance-school-email.sql"),
+  "utf8"
+);
+
 describe("QR attendance SQL", () => {
   it("creates active guests and links attendance records", () => {
     expect(guestSql).toContain("create table if not exists guests");
@@ -26,11 +31,26 @@ describe("QR attendance SQL", () => {
     expect(guestSql).toContain("active_member_id");
   });
 
+  it("keeps the public meeting_id argument separate from attendance column references", () => {
+    expect(guestSql).toContain("meeting_id uuid,");
+    expect(guestSql).toContain("selected_meeting_id uuid := meeting_id;");
+    expect(guestSql).toContain("attendance_records.meeting_id = selected_meeting_id");
+  });
+
   it("archives guests and promotes only active matching guests", () => {
     expect(guestSql).toContain("promote_active_guest_to_member");
     expect(guestSql).toContain("active_guest.archived_at is null");
     expect(guestSql).toContain("archive_active_guests");
     expect(guestSql).toContain("set archived_at = now()");
+  });
+
+  it("uses normalized school email as the new attendance identity", () => {
+    expect(schoolEmailSql).toContain("add column if not exists school_email text");
+    expect(schoolEmailSql).toContain("guests_active_normalized_school_email_unique");
+    expect(schoolEmailSql).toContain("attendance_records_unique_meeting_school_email");
+    expect(schoolEmailSql).toContain("school_email text,");
+    expect(schoolEmailSql).toContain("normalized_school_email := lower(btrim(coalesce(school_email, '')));");
+    expect(schoolEmailSql).toContain("promote_active_guest_by_email");
   });
   it("uses Eastern event windows and returns all active activities", () => {
     expect(eventWindowSql).toContain("America/New_York");

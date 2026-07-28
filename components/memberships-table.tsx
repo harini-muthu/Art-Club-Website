@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 
 type MemberAction = (formData: FormData) => void | Promise<void>;
@@ -40,6 +40,7 @@ function TrashIcon() {
 
 export function MembershipsTable({ deleteMember, members, updateMember }: MembershipsTableProps) {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const updateForms = useRef(new Map<string, HTMLFormElement>());
 
   return (
     <div className="members-table-scroll">
@@ -89,18 +90,38 @@ export function MembershipsTable({ deleteMember, members, updateMember }: Member
                   <textarea defaultValue={member.notes} disabled={!isEditing} form={formId} id={`notes-${member.id}`} name="notes" rows={2} />
                 </td>
                 <td className="members-table-actions">
-                  <form action={updateMember} id={formId}>
+                  <form
+                    action={updateMember}
+                    id={formId}
+                    ref={(form) => {
+                      if (form) {
+                        updateForms.current.set(member.id, form);
+                      } else {
+                        updateForms.current.delete(member.id);
+                      }
+                    }}
+                  >
                     <input name="memberId" type="hidden" value={member.id} />
                     <input name="membershipId" type="hidden" value={member.membershipId} />
                     <input name="originalMembershipType" type="hidden" value={member.membershipType} />
                     <input name="startsOn" type="hidden" value={member.startsOn} />
                     <input name="expiresOn" type="hidden" value={member.expiresOn} />
                   </form>
-                  {isEditing ? (
-                    <button aria-label={`Save ${member.fullName}`} className="icon-button" form={formId} title={`Save ${member.fullName}`} type="submit"><SaveIcon /></button>
-                  ) : (
-                    <button aria-label={`Edit ${member.fullName}`} className="icon-button" onClick={() => setEditingMemberId(member.id)} title={`Edit ${member.fullName}`} type="button"><PencilIcon /></button>
-                  )}
+                  <button
+                    aria-label={isEditing ? `Save ${member.fullName}` : `Edit ${member.fullName}`}
+                    className="icon-button"
+                    onClick={() => {
+                      if (isEditing) {
+                        updateForms.current.get(member.id)?.requestSubmit();
+                      } else {
+                        setEditingMemberId(member.id);
+                      }
+                    }}
+                    title={isEditing ? `Save ${member.fullName}` : `Edit ${member.fullName}`}
+                    type="button"
+                  >
+                    {isEditing ? <SaveIcon /> : <PencilIcon />}
+                  </button>
                   <form action={deleteMember}>
                     <input name="memberId" type="hidden" value={member.id} />
                     <ConfirmSubmitButton aria-label={`Delete ${member.fullName}`} className="icon-button danger" message={`Delete ${member.fullName}? This cannot be undone.`} title={`Delete ${member.fullName}`}><TrashIcon /></ConfirmSubmitButton>

@@ -71,6 +71,17 @@ describe("MembershipsTable", () => {
     ).toBeNull();
   });
 
+  it("keeps the control non-submitting after edit mode opens", async () => {
+    const user = userEvent.setup();
+    render(<MembershipsTable deleteMember={noOp} members={members} updateMember={noOp} />);
+
+    await user.click(screen.getByRole("button", { name: "Edit Avery Park" }));
+
+    const saveButton = screen.getByRole("button", { name: "Save Avery Park" });
+    expect(saveButton).toHaveAttribute("type", "button");
+    expect(saveButton).not.toHaveAttribute("form");
+  });
+
   it("asks for confirmation before the icon-only delete control submits", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<MembershipsTable deleteMember={noOp} members={members} updateMember={noOp} />);

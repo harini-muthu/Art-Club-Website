@@ -310,6 +310,7 @@ export async function addMeetingActivity(formData: FormData) {
     redirectToAdminWithError("activity-save-failed");
   }
 
+  revalidatePath("/");
   redirectToAdminWithStatus("activity-added");
 }
 
@@ -351,6 +352,7 @@ export async function updateMeetingActivity(formData: FormData) {
     redirectToAdminWithError("activity-save-failed");
   }
 
+  revalidatePath("/");
   redirectToAdminWithStatus("activity-updated");
 }
 
@@ -381,6 +383,7 @@ export async function deleteMeetingActivity(formData: FormData) {
     redirectToAdminWithError("activity-save-failed");
   }
 
+  revalidatePath("/");
   redirectToAdminWithStatus("activity-deleted");
 }
 

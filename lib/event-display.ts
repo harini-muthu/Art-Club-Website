@@ -59,15 +59,20 @@ function timeLabel(startsAt?: string | null, endsAt?: string | null) {
   return start || "Time to be announced";
 }
 
-function eventDistanceFromToday(eventDate: string, today: Date) {
-  const eventTime = new Date(`${eventDate}T00:00:00Z`).getTime();
-  const todayTime = Date.UTC(
-    today.getUTCFullYear(),
-    today.getUTCMonth(),
-    today.getUTCDate()
+function getDateKeyInTimeZone(date: Date, timeZone: string) {
+  const values = Object.fromEntries(
+    new Intl.DateTimeFormat("en", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    })
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value])
   );
 
-  return Math.abs(eventTime - todayTime);
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 export function buildPublicEventsFromMeetings(
@@ -116,15 +121,23 @@ export function selectHighlightedEvent(
   events: PublicEvent[],
   today: Date = new Date()
 ) {
-  return [...events].sort((a, b) => {
-    const distanceDifference =
-      eventDistanceFromToday(a.eventDate, today) -
-      eventDistanceFromToday(b.eventDate, today);
+  const easternToday = getDateKeyInTimeZone(today, "America/New_York");
 
-    if (distanceDifference !== 0) {
-      return distanceDifference;
-    }
+  return [...events]
+    .filter((event) => event.eventDate >= easternToday)
+    .sort((a, b) => a.eventDate.localeCompare(b.eventDate))[0];
+}
 
-    return a.eventDate.localeCompare(b.eventDate);
-  })[0];
+export function getPublicEventDisplay(
+  events: PublicEvent[],
+  today: Date = new Date()
+) {
+  const easternToday = getDateKeyInTimeZone(today, "America/New_York");
+
+  return {
+    upcomingEvent: selectHighlightedEvent(events, today),
+    pastEvents: events
+      .filter((event) => event.eventDate < easternToday)
+      .sort((a, b) => b.eventDate.localeCompare(a.eventDate))
+  };
 }

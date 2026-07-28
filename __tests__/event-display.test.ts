@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPublicEventsFromMeetings,
+  getPublicEventDisplay,
   selectHighlightedEvent
 } from "@/lib/event-display";
 
@@ -42,7 +43,7 @@ describe("event display helpers", () => {
     ]);
   });
 
-  it("selects the event whose date is closest to today", () => {
+  it("selects the earliest visible event on or after the current Eastern date", () => {
     const events = buildPublicEventsFromMeetings([
       {
         id: "meeting-1",
@@ -65,7 +66,56 @@ describe("event display helpers", () => {
     ]);
 
     expect(
-      selectHighlightedEvent(events, new Date("2026-07-17T12:00:00Z"))?.title
-    ).toBe("Closest");
+      selectHighlightedEvent(events, new Date("2026-07-25T12:00:00Z"))?.title
+    ).toBe("Far Future");
+  });
+
+  it("keeps an event highlighted through its full Eastern calendar day", () => {
+    const events = buildPublicEventsFromMeetings([
+      {
+        id: "meeting-1",
+        activity: "Tonight",
+        meeting_date: "2026-07-17",
+        show_on_calendar: true
+      },
+      {
+        id: "meeting-2",
+        activity: "Tomorrow",
+        meeting_date: "2026-07-18",
+        show_on_calendar: true
+      }
+    ]);
+
+    expect(
+      selectHighlightedEvent(events, new Date("2026-07-18T03:59:59Z"))?.title
+    ).toBe("Tonight");
+    expect(
+      selectHighlightedEvent(events, new Date("2026-07-18T04:00:00Z"))?.title
+    ).toBe("Tomorrow");
+  });
+
+  it("partitions the public display into one upcoming event and newest-first past events", () => {
+    const events = buildPublicEventsFromMeetings([
+      { id: "old", activity: "Old", meeting_date: "2026-07-12", show_on_calendar: true },
+      { id: "recent", activity: "Recent", meeting_date: "2026-07-16", show_on_calendar: true },
+      { id: "today", activity: "Today", meeting_date: "2026-07-17", show_on_calendar: true },
+      { id: "future", activity: "Future", meeting_date: "2026-07-24", show_on_calendar: true }
+    ]);
+
+    expect(getPublicEventDisplay(events, new Date("2026-07-17T16:00:00Z"))).toMatchObject({
+      upcomingEvent: { id: "today" },
+      pastEvents: [{ id: "recent" }, { id: "old" }]
+    });
+  });
+
+  it("returns no upcoming event when every visible event is in the Eastern-time past", () => {
+    const events = buildPublicEventsFromMeetings([
+      { id: "past", activity: "Past", meeting_date: "2026-07-16", show_on_calendar: true }
+    ]);
+
+    expect(getPublicEventDisplay(events, new Date("2026-07-17T16:00:00Z"))).toMatchObject({
+      upcomingEvent: undefined,
+      pastEvents: [{ id: "past" }]
+    });
   });
 });

@@ -12,8 +12,10 @@ import { adminLoginRedirectUrl } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 
 export type OfficerProfile = {
+  id: string;
   name: string;
   role: string;
+  email: string;
 };
 
 export function formatAdminDate(date?: string | null) {
@@ -41,7 +43,7 @@ export async function getAuthorizedOfficerProfile() {
 
   const { data: officerProfile } = await supabase
     .from("officers")
-    .select("name, role, email")
+    .select("id, name, role, email")
     .eq("email", user.email.trim().toLowerCase())
     .single();
 

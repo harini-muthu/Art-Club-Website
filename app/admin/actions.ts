@@ -20,7 +20,7 @@ import {
   validateMemberSubmission,
   validateMemberUpdateSubmission
 } from "@/lib/admin-entry-validation";
-import { adminLoginRedirectUrl } from "@/lib/admin-auth";
+import { adminLoginRedirectUrl, isPresidentRole } from "@/lib/admin-auth";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 export async function signOutAdmin() {
@@ -30,6 +30,8 @@ export async function signOutAdmin() {
 }
 
 type OfficerProfile = {
+  id: string;
+  email: string;
   full_name: string;
   role: string;
 };
@@ -102,7 +104,7 @@ async function getAuthorizedAdminClient() {
 
   const { data: officer } = await supabase
     .from("officers")
-    .select("name, role, email")
+    .select("id, name, role, email")
     .eq("email", userEmail)
     .single();
 
@@ -113,6 +115,8 @@ async function getAuthorizedAdminClient() {
   return {
     supabase,
     officerProfile: {
+      id: officer.id,
+      email: officer.email,
       full_name: officer.name,
       role: officer.role
     } as OfficerProfile
@@ -148,6 +152,24 @@ function redirectToAdminWithOfficerStatus(status: string): never {
   revalidatePath("/admin/officers");
   revalidatePath("/about");
   redirect(`/admin/officers?status=${status}`);
+}
+
+function requirePresident(role: string): void {
+  if (!isPresidentRole(role)) {
+    redirectToAdminWithError("officer-access-denied");
+  }
+}
+
+function redirectToOfficerMutationError(error: { message?: string } | null): never {
+  if (/at least one president must remain/i.test(error?.message ?? "")) {
+    redirectToAdminWithError("officer-last-president");
+  }
+
+  if (/no more than two presidents are allowed/i.test(error?.message ?? "")) {
+    redirectToAdminWithError("officer-president-limit");
+  }
+
+  redirectToAdminWithError("officer-save-failed");
 }
 
 function meetingRowFromSubmission(data: MeetingSubmission) {
@@ -312,7 +334,8 @@ export async function addOfficer(formData: FormData) {
     redirectToAdminWithError("officer-invalid");
   }
 
-  const { supabase } = await getAuthorizedAdminClient();
+  const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  requirePresident(officerProfile.role);
 
   let provisioningConfig;
   try {
@@ -333,7 +356,7 @@ export async function addOfficer(formData: FormData) {
   const { error } = await supabase.from("officers").insert(validation.data);
 
   if (error) {
-    redirectToAdminWithError("officer-save-failed");
+    redirectToOfficerMutationError(error);
   }
 
   redirectToAdminWithOfficerStatus("officer-added");
@@ -346,15 +369,38 @@ export async function updateOfficer(formData: FormData) {
     redirectToAdminWithError("officer-invalid");
   }
 
-  const { officer_id: officerId, ...officerRow } = validation.data;
-  const { supabase } = await getAuthorizedAdminClient();
+  const { officer_id: officerId, role, ...profileFields } = validation.data;
+  const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  let officerRow: typeof profileFields | (typeof profileFields & { role: string }) = {
+    ...profileFields,
+    role
+  };
+
+  if (!isPresidentRole(officerProfile.role)) {
+    const { data: targetOfficer } = await supabase
+      .from("officers")
+      .select("id, role")
+      .eq("id", officerId)
+      .single();
+
+    if (
+      !targetOfficer ||
+      targetOfficer.id !== officerProfile.id ||
+      targetOfficer.role !== role
+    ) {
+      redirectToAdminWithError("officer-access-denied");
+    }
+
+    officerRow = profileFields;
+  }
+
   const { error } = await supabase
     .from("officers")
     .update(officerRow)
     .eq("id", officerId);
 
   if (error) {
-    redirectToAdminWithError("officer-save-failed");
+    redirectToOfficerMutationError(error);
   }
 
   redirectToAdminWithOfficerStatus("officer-updated");
@@ -367,7 +413,8 @@ export async function deleteOfficer(formData: FormData) {
     redirectToAdminWithError("officer-invalid");
   }
 
-  const { supabase } = await getAuthorizedAdminClient();
+  const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  requirePresident(officerProfile.role);
   const { count, error: countError } = await supabase
     .from("officers")
     .select("id", { count: "exact", head: true });
@@ -386,7 +433,7 @@ export async function deleteOfficer(formData: FormData) {
     .eq("id", officerId.trim());
 
   if (error) {
-    redirectToAdminWithError("officer-save-failed");
+    redirectToOfficerMutationError(error);
   }
 
   redirectToAdminWithOfficerStatus("officer-deleted");

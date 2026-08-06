@@ -95,6 +95,23 @@ values for the required environments, and redeploy. Use the Supabase project
 secret/service-role key for `SUPABASE_SERVICE_ROLE_KEY`; never prefix either
 variable with `NEXT_PUBLIC_`.
 
+### Supabase keep-alive
+
+The daily GitHub Actions workflow makes one read-only request to Supabase so
+the project remains active during quiet periods. In the GitHub repository,
+open **Settings → Secrets and variables → Actions** and add these repository
+secrets:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+```
+
+Use the same values configured for the site. To run it immediately or inspect
+past runs, open the repository’s **Actions** tab and choose **Supabase
+keep-alive**. The workflow fails if either secret is missing or Supabase does
+not return a successful response.
+
 ## Notes For Future Maintainers
 
 This project is currently public-site first. The admin side, database, attendance, membership management, gallery submissions, and production email setup are planned but not fully implemented yet.

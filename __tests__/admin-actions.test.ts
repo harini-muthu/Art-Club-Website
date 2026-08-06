@@ -42,7 +42,11 @@ function setupSupabaseMock({
   authProvisioningThrows = false,
   existingAuthUser = false,
   existingAuthUserPage = 1,
-  officerCount = 2
+  officerCount = 2,
+  officerRole = "President",
+  targetOfficerId = "officer-2",
+  targetOfficerRole = "Vice President",
+  officerDeleteError = null as string | null
 } = {}) {
   const memberInsert = vi.fn(() => ({
     select: () => ({
@@ -106,19 +110,30 @@ function setupSupabaseMock({
   }));
   const officerUpdateEq = vi.fn(async () => ({ error: null }));
   const officerUpdate = vi.fn(() => ({ eq: officerUpdateEq }));
-  const officerDeleteEq = vi.fn(async () => ({ error: null }));
+  const officerDeleteEq = vi.fn(async () => ({
+    error: officerDeleteError ? { message: officerDeleteError } : null
+  }));
   const officerDelete = vi.fn(() => ({ eq: officerDeleteEq }));
   const officerCountSelect = vi.fn(async () => ({ count: officerCount, error: null }));
   const officerAuthSingle = vi.fn(async () => ({
     data: {
       id: "officer-1",
       name: "Officer One",
-      role: "President",
+      role: officerRole,
       email: "officer@example.edu"
     },
     error: null
   }));
-  const officerAuthEq = vi.fn(() => ({ single: officerAuthSingle }));
+  const officerTargetSingle = vi.fn(async () => ({
+    data: {
+      id: targetOfficerId,
+      role: targetOfficerRole
+    },
+    error: null
+  }));
+  const officerAuthEq = vi.fn((column?: string) => ({
+    single: column === "id" ? officerTargetSingle : officerAuthSingle
+  }));
   const officerSelect = vi.fn((columns?: string, options?: { count?: string; head?: boolean }) => {
     if (options?.count === "exact" && options.head) {
       return officerCountSelect();
@@ -392,6 +407,26 @@ describe("admin data entry actions", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/about");
   });
 
+  it("rejects an officer addition from a non-president before provisioning access", async () => {
+    const { adminCreateUser, officerInsert } = setupSupabaseMock({
+      officerRole: "Treasurer"
+    });
+
+    await expect(
+      addOfficer(
+        formData({
+          officerName: "Avery Park",
+          officerRole: "VP of Events",
+          officerEmail: "avery@example.edu",
+          officerFocus: "Workshops"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin/officers?error=officer-access-denied");
+
+    expect(adminCreateUser).not.toHaveBeenCalled();
+    expect(officerInsert).not.toHaveBeenCalled();
+  });
+
   it("does not add an officer when shared-password provisioning is not configured", async () => {
     const { officerInsert } = setupSupabaseMock();
     delete process.env.OFFICER_SHARED_PASSWORD;
@@ -545,6 +580,72 @@ describe("admin data entry actions", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/about");
   });
 
+  it("lets a non-president update only their own non-title profile fields", async () => {
+    const { officerUpdate } = setupSupabaseMock({
+      officerRole: "Treasurer",
+      targetOfficerId: "officer-1",
+      targetOfficerRole: "Treasurer"
+    });
+
+    await expect(
+      updateOfficer(
+        formData({
+          officerId: "officer-1",
+          officerName: "Officer One Updated",
+          officerRole: "Treasurer",
+          officerEmail: "officer@example.edu",
+          officerFocus: "Budget"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin/officers?status=officer-updated");
+
+    expect(officerUpdate).toHaveBeenCalledWith({
+      name: "Officer One Updated",
+      email: "officer@example.edu",
+      focus: "Budget"
+    });
+  });
+
+  it("rejects a non-president attempting to change their title", async () => {
+    const { officerUpdate } = setupSupabaseMock({
+      officerRole: "Treasurer",
+      targetOfficerId: "officer-1",
+      targetOfficerRole: "Treasurer"
+    });
+
+    await expect(
+      updateOfficer(
+        formData({
+          officerId: "officer-1",
+          officerName: "Officer One",
+          officerRole: "President",
+          officerEmail: "officer@example.edu",
+          officerFocus: "Budget"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin/officers?error=officer-access-denied");
+
+    expect(officerUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-president attempting to edit another officer", async () => {
+    const { officerUpdate } = setupSupabaseMock({ officerRole: "Treasurer" });
+
+    await expect(
+      updateOfficer(
+        formData({
+          officerId: "officer-2",
+          officerName: "Avery Park",
+          officerRole: "Vice President",
+          officerEmail: "avery@example.edu",
+          officerFocus: "Events"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin/officers?error=officer-access-denied");
+
+    expect(officerUpdate).not.toHaveBeenCalled();
+  });
+
   it("deletes an officer after confirming another officer remains", async () => {
     const { officerCountSelect, officerDelete, officerDeleteEq } =
       setupSupabaseMock();
@@ -560,6 +661,16 @@ describe("admin data entry actions", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/about");
   });
 
+  it("rejects an officer deletion from a non-president", async () => {
+    const { officerDelete } = setupSupabaseMock({ officerRole: "Treasurer" });
+
+    await expect(
+      deleteOfficer(formData({ officerId: "officer-2" }))
+    ).rejects.toThrow("REDIRECT:/admin/officers?error=officer-access-denied");
+
+    expect(officerDelete).not.toHaveBeenCalled();
+  });
+
   it("does not delete the final officer", async () => {
     const { officerDelete } = setupSupabaseMock({ officerCount: 1 });
 
@@ -568,6 +679,16 @@ describe("admin data entry actions", () => {
     ).rejects.toThrow("REDIRECT:/admin/officers?error=officer-final-delete");
 
     expect(officerDelete).not.toHaveBeenCalled();
+  });
+
+  it("explains when the database rejects removal of the final president", async () => {
+    setupSupabaseMock({
+      officerDeleteError: "At least one president must remain"
+    });
+
+    await expect(
+      deleteOfficer(formData({ officerId: "officer-1" }))
+    ).rejects.toThrow("REDIRECT:/admin/officers?error=officer-last-president");
   });
 
   it("does not write when member form validation fails", async () => {

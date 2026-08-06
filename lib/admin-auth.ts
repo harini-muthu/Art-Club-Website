@@ -1,5 +1,9 @@
 export type AdminLoginRedirectReason = "missing-session" | "missing-profile";
 
+export function isPresidentRole(role: string | null | undefined) {
+  return role?.trim().toLowerCase() === "president";
+}
+
 const adminLoginRedirectMessages: Record<AdminLoginRedirectReason, string> = {
   "missing-profile":
     "Your sign-in worked, but this account is not configured as an officer.",

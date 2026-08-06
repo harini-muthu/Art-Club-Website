@@ -72,6 +72,27 @@ declare module "@supabase/ssr" {
 
   type SupabaseClient = {
     auth: {
+      admin?: {
+        createUser(attributes: {
+          email: string;
+          password: string;
+          email_confirm: boolean;
+        }): Promise<{
+          data: { user: { id: string } | null };
+          error: { message: string } | null;
+        }>;
+        listUsers(options?: { page?: number; perPage?: number }): Promise<{
+          data: { users: Array<{ id: string; email?: string }> };
+          error: { message: string } | null;
+        }>;
+        updateUserById(
+          userId: string,
+          attributes: { password: string }
+        ): Promise<{
+          data: { user: { id: string } | null };
+          error: { message: string } | null;
+        }>;
+      };
       getUser(): Promise<{
         data: { user: { id: string; email?: string } | null };
         error: { message: string } | null;

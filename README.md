@@ -67,7 +67,8 @@ npm start
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.local` when testing email configuration locally.
+Copy `.env.example` to `.env.local` when testing locally. Never commit
+`.env.local` or any secret values.
 
 ```env
 RESEND_API_KEY=
@@ -77,6 +78,22 @@ CONTACT_REPLY_NAME=Studio Collective
 ```
 
 Email sending is intentionally safe when these values are missing: the contact form will show a fallback message instead of pretending a message was sent.
+
+### Officer account provisioning
+
+Adding an officer creates (or resets) that email's Supabase Auth account with
+the shared club password. Set these server-only variables both locally and in
+Vercel before using **Add officer**:
+
+```env
+SUPABASE_SERVICE_ROLE_KEY=
+OFFICER_SHARED_PASSWORD=
+```
+
+In Vercel, open the project’s **Settings → Environment Variables**, add both
+values for the required environments, and redeploy. Use the Supabase project
+secret/service-role key for `SUPABASE_SERVICE_ROLE_KEY`; never prefix either
+variable with `NEXT_PUBLIC_`.
 
 ## Notes For Future Maintainers
 

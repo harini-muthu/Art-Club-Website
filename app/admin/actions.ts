@@ -7,6 +7,7 @@ import {
   uploadEventImage
 } from "@/lib/event-image-storage";
 import {
+  getOfficerProvisioningConfig,
   getSupabaseBrowserConfig
 } from "@/lib/supabase/config";
 import {
@@ -20,7 +21,7 @@ import {
   validateMemberUpdateSubmission
 } from "@/lib/admin-entry-validation";
 import { adminLoginRedirectUrl } from "@/lib/admin-auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 export async function signOutAdmin() {
   const supabase = await createClient();
@@ -32,6 +33,56 @@ type OfficerProfile = {
   full_name: string;
   role: string;
 };
+
+async function provisionOfficerAuth(email: string, sharedPassword: string) {
+  try {
+    const adminSupabase = await createAdminClient();
+    const adminAuth = adminSupabase.auth.admin;
+
+    if (!adminAuth) {
+      return false;
+    }
+
+    const { error: createError } = await adminAuth.createUser({
+      email,
+      password: sharedPassword,
+      email_confirm: true
+    });
+
+    if (!createError) {
+      return true;
+    }
+
+    if (!/already registered/i.test(createError.message)) {
+      return false;
+    }
+
+    const perPage = 1000;
+    for (let page = 1; ; page += 1) {
+      const { data, error: listError } = await adminAuth.listUsers({ page, perPage });
+      if (listError) {
+        return false;
+      }
+
+      const existingUser = data.users.find(
+        (user) => user.email?.trim().toLowerCase() === email
+      );
+
+      if (existingUser) {
+        const { error: updateError } = await adminAuth.updateUserById(existingUser.id, {
+          password: sharedPassword
+        });
+        return !updateError;
+      }
+
+      if (data.users.length < perPage) {
+        return false;
+      }
+    }
+  } catch {
+    return false;
+  }
+}
 
 async function getAuthorizedAdminClient() {
   const supabase = await createClient();
@@ -262,6 +313,23 @@ export async function addOfficer(formData: FormData) {
   }
 
   const { supabase } = await getAuthorizedAdminClient();
+
+  let provisioningConfig;
+  try {
+    provisioningConfig = getOfficerProvisioningConfig();
+  } catch {
+    redirectToAdminWithError("officer-auth-config-missing");
+  }
+
+  const provisioned = await provisionOfficerAuth(
+    validation.data.email,
+    provisioningConfig.sharedPassword
+  );
+
+  if (!provisioned) {
+    redirectToAdminWithError("officer-auth-provision-failed");
+  }
+
   const { error } = await supabase.from("officers").insert(validation.data);
 
   if (error) {

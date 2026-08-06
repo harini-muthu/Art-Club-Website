@@ -23,6 +23,8 @@ export const errorMessages: Record<string, string> = {
   "member-invalid": "Check the member fields and try again.",
   "member-save-failed": "Member could not be saved. Check Supabase policies.",
   "officer-final-delete": "Keep at least one officer so admin access is not locked out.",
+  "officer-auth-config-missing": "Officer sign-in provisioning is not configured. Add the required server environment variables.",
+  "officer-auth-provision-failed": "Officer account access could not be created. Try again or check the server configuration.",
   "officer-invalid": "Check the officer fields and try again.",
   "officer-save-failed": "Officer could not be saved. Check Supabase policies."
 };

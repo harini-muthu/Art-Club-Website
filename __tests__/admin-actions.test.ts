@@ -11,7 +11,7 @@ import {
   updateMeetingActivity,
   updateMemberWithMembership
 } from "@/app/admin/actions";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -26,6 +26,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
+  createAdminClient: vi.fn(),
   createClient: vi.fn()
 }));
 
@@ -35,7 +36,14 @@ function formData(values: Record<string, string | File>) {
   return data;
 }
 
-function setupSupabaseMock({ officerCount = 2 } = {}) {
+function setupSupabaseMock({
+  authenticated = true,
+  authProvisioningError = null,
+  authProvisioningThrows = false,
+  existingAuthUser = false,
+  existingAuthUserPage = 1,
+  officerCount = 2
+} = {}) {
   const memberInsert = vi.fn(() => ({
     select: () => ({
       single: async () => ({ data: { id: "member-1" }, error: null })
@@ -64,6 +72,38 @@ function setupSupabaseMock({ officerCount = 2 } = {}) {
   const meetingSelect = vi.fn(() => ({ eq: meetingSelectEq }));
   const attendanceInsert = vi.fn(async () => ({ error: null }));
   const officerInsert = vi.fn(async () => ({ error: null }));
+  const adminCreateUser = vi.fn(async () => {
+    if (authProvisioningThrows) {
+      throw new Error("Auth service unavailable");
+    }
+
+    if (authProvisioningError) {
+      return { data: { user: null }, error: { message: authProvisioningError } };
+    }
+
+    if (existingAuthUser) {
+      return { data: { user: null }, error: { message: "User already registered" } };
+    }
+
+    return { data: { user: { id: "new-auth-user" }, error: null } };
+  });
+  const adminListUsers = vi.fn(async ({ page = 1 } = {}) => ({
+    data: {
+      users: existingAuthUser && page === existingAuthUserPage
+        ? [{ id: "existing-auth-user", email: "avery@example.edu" }]
+        : existingAuthUser && page < existingAuthUserPage
+          ? Array.from({ length: 1000 }, (_, index) => ({
+              id: `other-auth-user-${index}`,
+              email: `other-${index}@example.edu`
+            }))
+          : []
+    },
+    error: null
+  }));
+  const adminUpdateUserById = vi.fn(async () => ({
+    data: { user: { id: "existing-auth-user" } },
+    error: null
+  }));
   const officerUpdateEq = vi.fn(async () => ({ error: null }));
   const officerUpdate = vi.fn(() => ({ eq: officerUpdateEq }));
   const officerDeleteEq = vi.fn(async () => ({ error: null }));
@@ -107,7 +147,11 @@ function setupSupabaseMock({ officerCount = 2 } = {}) {
   const supabase = {
     auth: {
       getUser: vi.fn(async () => ({
-        data: { user: { id: "auth-user-1", email: "Officer@Example.EDU" } },
+        data: {
+          user: authenticated
+            ? { id: "auth-user-1", email: "Officer@Example.EDU" }
+            : null
+        },
         error: null
       })),
       signOut: vi.fn()
@@ -155,10 +199,24 @@ function setupSupabaseMock({ officerCount = 2 } = {}) {
     }
   };
 
+  const adminSupabase = {
+    auth: {
+      admin: {
+        createUser: adminCreateUser,
+        listUsers: adminListUsers,
+        updateUserById: adminUpdateUserById
+      }
+    }
+  };
+
   vi.mocked(createClient).mockResolvedValue(supabase as never);
+  vi.mocked(createAdminClient).mockResolvedValue(adminSupabase as never);
 
   return {
     attendanceInsert,
+    adminCreateUser,
+    adminListUsers,
+    adminUpdateUserById,
     meetingDelete,
     meetingDeleteEq,
     meetingInsert,
@@ -196,6 +254,8 @@ describe("admin data entry actions", () => {
     vi.setSystemTime(new Date("2026-07-17T12:00:00Z"));
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-key";
+    process.env.OFFICER_SHARED_PASSWORD = "club-password";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
   });
 
   afterEach(() => {
@@ -304,7 +364,7 @@ describe("admin data entry actions", () => {
   });
 
   it("adds an officer with a private normalized email", async () => {
-    const { officerInsert } = setupSupabaseMock();
+    const { adminCreateUser, officerInsert } = setupSupabaseMock();
 
     await expect(
       addOfficer(
@@ -323,8 +383,140 @@ describe("admin data entry actions", () => {
       email: "avery@example.edu",
       focus: "Workshops"
     });
+    expect(adminCreateUser).toHaveBeenCalledWith({
+      email: "avery@example.edu",
+      email_confirm: true,
+      password: "club-password"
+    });
     expect(revalidatePath).toHaveBeenCalledWith("/admin/officers");
     expect(revalidatePath).toHaveBeenCalledWith("/about");
+  });
+
+  it("does not add an officer when shared-password provisioning is not configured", async () => {
+    const { officerInsert } = setupSupabaseMock();
+    delete process.env.OFFICER_SHARED_PASSWORD;
+
+    await expect(
+      addOfficer(
+        formData({
+          officerName: "Avery Park",
+          officerRole: "VP of Events",
+          officerEmail: "avery@example.edu",
+          officerFocus: "Workshops"
+        })
+      )
+    ).rejects.toThrow(
+      "REDIRECT:/admin/officers?error=officer-auth-config-missing"
+    );
+
+    expect(officerInsert).not.toHaveBeenCalled();
+  });
+
+  it("does not provision an officer account before the caller is authorized", async () => {
+    const { adminCreateUser, officerInsert } = setupSupabaseMock({
+      authenticated: false
+    });
+
+    await expect(
+      addOfficer(
+        formData({
+          officerName: "Avery Park",
+          officerRole: "VP of Events",
+          officerEmail: "avery@example.edu",
+          officerFocus: "Workshops"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin/login?reason=missing-session");
+
+    expect(adminCreateUser).not.toHaveBeenCalled();
+    expect(officerInsert).not.toHaveBeenCalled();
+  });
+
+  it("resets an existing officer account to the shared password", async () => {
+    const { adminUpdateUserById, officerInsert } = setupSupabaseMock({
+      existingAuthUser: true
+    });
+
+    await expect(
+      addOfficer(
+        formData({
+          officerName: "Avery Park",
+          officerRole: "VP of Events",
+          officerEmail: "avery@example.edu",
+          officerFocus: "Workshops"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin/officers?status=officer-added");
+
+    expect(adminUpdateUserById).toHaveBeenCalledWith("existing-auth-user", {
+      password: "club-password"
+    });
+    expect(officerInsert).toHaveBeenCalled();
+  });
+
+  it("finds and resets an existing officer account on a later users page", async () => {
+    const { adminListUsers, adminUpdateUserById } = setupSupabaseMock({
+      existingAuthUser: true,
+      existingAuthUserPage: 2
+    });
+
+    await expect(
+      addOfficer(
+        formData({
+          officerName: "Avery Park",
+          officerRole: "VP of Events",
+          officerEmail: "avery@example.edu",
+          officerFocus: "Workshops"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin/officers?status=officer-added");
+
+    expect(adminListUsers).toHaveBeenCalledWith({ page: 2, perPage: 1000 });
+    expect(adminUpdateUserById).toHaveBeenCalledWith("existing-auth-user", {
+      password: "club-password"
+    });
+  });
+
+  it("does not add an officer when auth provisioning fails", async () => {
+    const { officerInsert } = setupSupabaseMock({
+      authProvisioningError: "Auth service unavailable"
+    });
+
+    await expect(
+      addOfficer(
+        formData({
+          officerName: "Avery Park",
+          officerRole: "VP of Events",
+          officerEmail: "avery@example.edu",
+          officerFocus: "Workshops"
+        })
+      )
+    ).rejects.toThrow(
+      "REDIRECT:/admin/officers?error=officer-auth-provision-failed"
+    );
+
+    expect(officerInsert).not.toHaveBeenCalled();
+  });
+
+  it("does not add an officer when auth provisioning throws", async () => {
+    const { officerInsert } = setupSupabaseMock({
+      authProvisioningThrows: true
+    });
+
+    await expect(
+      addOfficer(
+        formData({
+          officerName: "Avery Park",
+          officerRole: "VP of Events",
+          officerEmail: "avery@example.edu",
+          officerFocus: "Workshops"
+        })
+      )
+    ).rejects.toThrow(
+      "REDIRECT:/admin/officers?error=officer-auth-provision-failed"
+    );
+
+    expect(officerInsert).not.toHaveBeenCalled();
   });
 
   it("updates an officer", async () => {

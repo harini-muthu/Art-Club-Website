@@ -23,6 +23,7 @@ export const errorMessages: Record<string, string> = {
   "member-invalid": "Check the member fields and try again.",
   "member-save-failed": "Member could not be saved. Check Supabase policies.",
   "officer-final-delete": "Keep at least one officer so admin access is not locked out.",
+  "officer-email-immutable": "Officer email addresses cannot be changed. Create a new officer profile instead.",
   "officer-last-president": "Keep at least one president so officer management remains available.",
   "officer-president-limit": "Only two presidents can serve at the same time.",
   "officer-access-denied": "Only a president can manage officer roles and access.",

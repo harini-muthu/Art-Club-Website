@@ -47,12 +47,15 @@ describe("OfficersPage", () => {
       email: "avery@example.edu"
     });
 
-    render(await OfficersPage());
+    const { container } = render(await OfficersPage());
 
     expect(screen.queryByRole("button", { name: "Add officer" })).not.toBeInTheDocument();
     expect(screen.getAllByText("Edit")).toHaveLength(1);
     expect(screen.queryByText("Delete")).not.toBeInTheDocument();
     expect(screen.getByText("Title: Treasurer")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Description")).toBeInTheDocument();
+    expect(container.querySelector(".admin-row-summary")?.textContent).not.toContain("Budget");
   });
 
   it("shows full officer management controls to a president regardless of title case", async () => {
@@ -68,5 +71,7 @@ describe("OfficersPage", () => {
     expect(screen.getByRole("button", { name: "Add officer" })).toBeVisible();
     expect(screen.getAllByText("Edit")).toHaveLength(2);
     expect(screen.getAllByText("Delete")).toHaveLength(2);
+    expect(screen.getAllByLabelText("Email")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Description")).toHaveLength(3);
   });
 });

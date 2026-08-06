@@ -20,7 +20,7 @@ export default async function OfficersPage() {
           <label>Name<input name="officerName" required type="text" /></label>
           <label>Title<input name="officerRole" required type="text" /></label>
           <label>Email<input name="officerEmail" required type="email" /></label>
-          <label>Focus<textarea name="officerFocus" rows={3} /></label>
+          <label>Description<textarea name="officerFocus" rows={3} /></label>
           <button className="button primary" type="submit">Add officer</button>
         </form> : null}
       {officers.length ? <div className="admin-list">
@@ -28,7 +28,7 @@ export default async function OfficersPage() {
           const canEdit = isPresident || officer.id === currentOfficer.id;
 
           return <article className="admin-row compact editable" key={officer.id}>
-            <div className="admin-row-summary compact"><div><h3>{officer.name}</h3><p>{officer.role}</p></div><div><strong>{officer.email}</strong><p>{officer.focus || "No focus listed"}</p></div></div>
+            <div className="admin-row-summary compact"><div><h3>{officer.name}</h3><p>{officer.role}</p></div><div><strong>{officer.email}</strong></div></div>
             {canEdit ? <div className="admin-row-actions">
               <details>
                 <summary className="button secondary">Edit</summary>
@@ -36,8 +36,8 @@ export default async function OfficersPage() {
                   <input name="officerId" type="hidden" value={officer.id} />
                   <label>Name<input defaultValue={officer.name} name="officerName" required type="text" /></label>
                   {isPresident ? <label>Title<input defaultValue={officer.role} name="officerRole" required type="text" /></label> : <><input name="officerRole" type="hidden" value={officer.role} /><p>Title: {officer.role}</p></>}
-                  <label>Email<input defaultValue={officer.email ?? ""} name="officerEmail" required type="email" /></label>
-                  <label>Focus<textarea defaultValue={officer.focus ?? ""} name="officerFocus" rows={3} /></label>
+                  <input name="officerEmail" type="hidden" value={officer.email ?? ""} />
+                  <label>Description<textarea defaultValue={officer.focus ?? ""} name="officerFocus" rows={3} /></label>
                   <button className="button primary" type="submit">Save officer</button>
                 </form>
               </details>

@@ -46,6 +46,7 @@ function setupSupabaseMock({
   officerRole = "President",
   targetOfficerId = "officer-2",
   targetOfficerRole = "Vice President",
+  targetOfficerEmail = "avery@example.edu",
   officerDeleteError = null as string | null
 } = {}) {
   const memberInsert = vi.fn(() => ({
@@ -127,7 +128,8 @@ function setupSupabaseMock({
   const officerTargetSingle = vi.fn(async () => ({
     data: {
       id: targetOfficerId,
-      role: targetOfficerRole
+      role: targetOfficerRole,
+      email: targetOfficerEmail
     },
     error: null
   }));
@@ -572,7 +574,6 @@ describe("admin data entry actions", () => {
     expect(officerUpdate).toHaveBeenCalledWith({
       name: "Avery Park",
       role: "Vice President",
-      email: "avery@example.edu",
       focus: null
     });
     expect(officerUpdateEq).toHaveBeenCalledWith("id", "officer-2");
@@ -580,11 +581,30 @@ describe("admin data entry actions", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/about");
   });
 
+  it("rejects an email change to an existing officer profile", async () => {
+    const { officerUpdate } = setupSupabaseMock();
+
+    await expect(
+      updateOfficer(
+        formData({
+          officerId: "officer-2",
+          officerName: "Avery Park",
+          officerRole: "Vice President",
+          officerEmail: "avery-new@example.edu",
+          officerFocus: "Events"
+        })
+      )
+    ).rejects.toThrow("REDIRECT:/admin/officers?error=officer-email-immutable");
+
+    expect(officerUpdate).not.toHaveBeenCalled();
+  });
+
   it("lets a non-president update only their own non-title profile fields", async () => {
     const { officerUpdate } = setupSupabaseMock({
       officerRole: "Treasurer",
       targetOfficerId: "officer-1",
-      targetOfficerRole: "Treasurer"
+      targetOfficerRole: "Treasurer",
+      targetOfficerEmail: "officer@example.edu"
     });
 
     await expect(
@@ -601,7 +621,6 @@ describe("admin data entry actions", () => {
 
     expect(officerUpdate).toHaveBeenCalledWith({
       name: "Officer One Updated",
-      email: "officer@example.edu",
       focus: "Budget"
     });
   });
@@ -610,7 +629,8 @@ describe("admin data entry actions", () => {
     const { officerUpdate } = setupSupabaseMock({
       officerRole: "Treasurer",
       targetOfficerId: "officer-1",
-      targetOfficerRole: "Treasurer"
+      targetOfficerRole: "Treasurer",
+      targetOfficerEmail: "officer@example.edu"
     });
 
     await expect(

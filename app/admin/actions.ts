@@ -369,22 +369,25 @@ export async function updateOfficer(formData: FormData) {
     redirectToAdminWithError("officer-invalid");
   }
 
-  const { officer_id: officerId, role, ...profileFields } = validation.data;
+  const { officer_id: officerId, role, email, ...profileFields } = validation.data;
   const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  const { data: targetOfficer } = await supabase
+    .from("officers")
+    .select("id, role, email")
+    .eq("id", officerId)
+    .single();
+
+  if (!targetOfficer || targetOfficer.email !== email) {
+    redirectToAdminWithError("officer-email-immutable");
+  }
+
   let officerRow: typeof profileFields | (typeof profileFields & { role: string }) = {
     ...profileFields,
     role
   };
 
   if (!isPresidentRole(officerProfile.role)) {
-    const { data: targetOfficer } = await supabase
-      .from("officers")
-      .select("id, role")
-      .eq("id", officerId)
-      .single();
-
     if (
-      !targetOfficer ||
       targetOfficer.id !== officerProfile.id ||
       targetOfficer.role !== role
     ) {

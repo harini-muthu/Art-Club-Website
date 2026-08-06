@@ -38,7 +38,7 @@ function formData(values: Record<string, string | File>) {
 
 function setupSupabaseMock({
   authenticated = true,
-  authProvisioningError = null,
+  authProvisioningError = null as string | null,
   authProvisioningThrows = false,
   existingAuthUser = false,
   existingAuthUserPage = 1,

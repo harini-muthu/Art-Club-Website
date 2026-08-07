@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { GalleryGrid } from "@/components/gallery-grid";
+import { assignPhotosToColumns, GalleryGrid } from "@/components/gallery-grid";
 import { galleryPhotos } from "@/lib/site-data";
 
 describe("GalleryGrid", () => {
@@ -16,26 +16,28 @@ describe("GalleryGrid", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders artwork in submission order with full-art aspect ratios", () => {
-    const photos = galleryPhotos.map((photo, index) => index === 0
-      ? { ...photo, imageUrl: "https://images.example.test/sunlit-figure.jpg" }
-      : photo
-    );
+  it("renders the first two artworks in separate balanced columns", () => {
+    const photos = galleryPhotos.slice(0, 2);
     const { container } = render(<GalleryGrid photos={photos} />);
 
-    expect(container.querySelector(".gallery-grid")).toHaveClass("masonry-flow");
-    const artworkButtons = screen.getAllByRole("button", {
-      name: /Open /
-    });
-    expect(artworkButtons.map((button) => button.getAttribute("aria-label"))).toEqual(
-      photos.map((photo) => `Open ${photo.title}`)
-    );
-    expect(artworkButtons[0].querySelector(".artwork-preview")).toHaveStyle({
-      aspectRatio: "4 / 5"
-    });
-    expect(artworkButtons[0].querySelector("img")).toHaveStyle({
-      objectFit: "contain"
-    });
+    expect(container.querySelector(".gallery-columns")).toBeInTheDocument();
+    const columns = screen.getAllByTestId("gallery-column");
+    expect(columns).toHaveLength(2);
+    expect(within(columns[0]).getByRole("button", { name: "Open Sunlit Figure" })).toBeVisible();
+    expect(within(columns[1]).getByRole("button", { name: "Open Campus After Rain" })).toBeVisible();
+    expect(container.querySelector(".gallery-card")).not.toBeInTheDocument();
+  });
+
+  it("assigns each artwork to the currently shorter estimated column", () => {
+    const photos = galleryPhotos.slice(0, 4).map((photo, index) => ({
+      ...photo,
+      aspectRatio: index === 1 ? "2 / 1" : "1 / 1"
+    }));
+
+    expect(assignPhotosToColumns(photos).map((column) => column.map((photo) => photo.id))).toEqual([
+      ["sunlit-figure", "blue-hour"],
+      ["campus-after-rain", "thread-map"]
+    ]);
   });
 
   it("opens a high-quality artwork view with artist information", async () => {

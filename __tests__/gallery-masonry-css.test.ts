@@ -5,10 +5,10 @@ import { describe, expect, it } from "vitest";
 const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
 
 describe("gallery masonry layout", () => {
-  it("uses responsive three-to-one masonry columns", () => {
-    expect(css).toMatch(/\.gallery-grid\s*\{[^}]*column-count:\s*3/);
-    expect(css).toMatch(/@media \(max-width: 880px\)[\s\S]*\.gallery-grid\s*\{[^}]*column-count:\s*2/);
-    expect(css).toMatch(/@media \(max-width: 560px\)[\s\S]*\.gallery-grid\s*\{[^}]*column-count:\s*1/);
+  it("uses two independent columns that collapse to one on mobile", () => {
+    expect(css).toMatch(/\.gallery-columns\s*\{[^}]*display:\s*flex[^}]*align-items:\s*flex-start/);
+    expect(css).toMatch(/\.gallery-column\s*\{[^}]*flex-direction:\s*column/);
+    expect(css).toMatch(/@media \(max-width: 560px\)[\s\S]*\.gallery-columns\s*\{[^}]*display:\s*block/);
   });
 
   it("does not scale artwork previews on hover", () => {

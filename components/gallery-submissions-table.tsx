@@ -32,7 +32,7 @@ export function GallerySubmissionsTable({ submissions, deleteSubmission, reviewS
       <div className="admin-list">{published.map((submission) => <article className="admin-row" key={submission.id}>
         <div className="admin-row-summary compact">
           {submission.reviewImageUrl ? <Image alt={`${submission.title} by ${submission.artist_name}`} className="admin-activity-thumbnail" height={90} src={submission.reviewImageUrl} unoptimized width={90} /> : null}
-          <div><h3>{submission.title}</h3><p>{submission.artist_name} · Class of {submission.class_year}</p><p>Status: approved</p></div>
+          <div><h3>{submission.title}</h3><p>{submission.artist_name}</p><p>Status: approved</p></div>
         </div>
         <div className="admin-row-actions"><form action={deleteSubmission}><input name="submissionId" type="hidden" value={submission.id} /><ConfirmSubmitButton className="button danger" message="Are you sure you want to delete this artwork?">Delete</ConfirmSubmitButton></form></div>
       </article>)}</div>

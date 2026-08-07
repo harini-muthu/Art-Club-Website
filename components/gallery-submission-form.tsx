@@ -11,8 +11,8 @@ export function GallerySubmissionForm({ error, submitted }: { error?: boolean; s
     <label>Artwork title<input name="title" required type="text" /></label>
     <label>Class year<input name="classYear" placeholder="2027" required type="text" /></label>
     <label>Medium<input name="medium" placeholder="Oil on canvas" required type="text" /></label>
-    <label>Dimensions<input name="dimensions" placeholder="24 x 30 in." required type="text" /></label>
-    <label>Artist statement<textarea name="statement" required rows={5} /></label>
+    <label>Dimensions (optional)<input name="dimensions" placeholder="24 x 30 in." type="text" /></label>
+    <label>Artist statement (optional)<textarea name="statement" rows={5} /></label>
     <label>Artwork photo (JPG or PNG, 1 MB maximum)<input accept=".jpg,.jpeg,.png,image/jpeg,image/png" name="image" required type="file" /></label>
     <label className="admin-checkbox"><input name="consent" required type="checkbox" />I own this work and allow the club to publish it in the gallery.</label>
     <button className="button primary" type="submit">Send for review</button>

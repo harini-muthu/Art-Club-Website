@@ -61,8 +61,6 @@ export function validateGallerySubmission(formData: FormData): ValidationResult<
   if (!title) fieldErrors.title = "Enter the artwork title.";
   if (!classYear) fieldErrors.classYear = "Enter your class year.";
   if (!medium) fieldErrors.medium = "Enter the artwork medium.";
-  if (!dimensions) fieldErrors.dimensions = "Enter the artwork dimensions.";
-  if (!statement) fieldErrors.statement = "Enter an artist statement.";
   if (!consent) fieldErrors.consent = "Confirm that you own this work and allow the club to publish it.";
   if (!image || !acceptedGalleryImageTypes.includes(image.type)) {
     fieldErrors.image = "Upload a JPG or PNG image.";

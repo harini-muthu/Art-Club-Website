@@ -47,6 +47,19 @@ describe("gallery submissions", () => {
     });
   });
 
+  it("accepts an artwork submission without dimensions or a statement", () => {
+    expect(validateGallerySubmission(formData({
+      schoolEmail: "member@school.edu",
+      title: "Piece",
+      classYear: "2027",
+      medium: "Ink",
+      dimensions: "",
+      statement: "",
+      image: new File(["x"], "piece.jpg", { type: "image/jpeg" }),
+      consent: "on"
+    }))).toMatchObject({ ok: true });
+  });
+
   it("rejects missing consent and unsupported or oversized images", () => {
     const oversized = new File([new Uint8Array(maxGalleryImageSize + 1)], "piece.gif", {
       type: "image/gif"

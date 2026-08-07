@@ -41,8 +41,13 @@ declare module "@supabase/ssr" {
     update(row: unknown): SupabaseFilterBuilder<T>;
   };
 
-  type SupabaseFilterBuilder<T = Record<string, unknown>> = {
-    eq(column: string, value: string): SupabaseResult<T>;
+  type SupabaseFilterBuilder<T = Record<string, unknown>> = PromiseLike<
+    SupabasePayload<T>
+  > & {
+    eq(column: string, value: string): SupabaseFilterBuilder<T>;
+    maybeSingle(): SupabaseResult<T>;
+    neq(column: string, value: string): SupabaseFilterBuilder<T>;
+    select(columns: string): SupabaseFilterBuilder<T>;
   };
 
   type SupabaseMutationBuilder<T = Record<string, unknown>> =

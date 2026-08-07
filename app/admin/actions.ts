@@ -572,10 +572,14 @@ export async function reviewGallerySubmission(formData: FormData) {
     update.public_image_path = published.publicPath;
     update.public_image_url = published.publicUrl;
   }
-  const { error } = await supabase.from("gallery_submissions").update(update).eq("id", submissionId);
+  const { data: reviewedSubmission, error } = await supabase.from("gallery_submissions").update(update).eq("id", submissionId).neq("review_status", "approved").select("id").maybeSingle();
   if (error) {
     if (typeof update.public_image_path === "string") await deleteGalleryPublicImage(supabase, update.public_image_path);
     redirectToAdminWithError("gallery-save-failed");
+  }
+  if (!reviewedSubmission) {
+    if (typeof update.public_image_path === "string") await deleteGalleryPublicImage(supabase, update.public_image_path);
+    redirectToAdminWithError("gallery-invalid");
   }
   redirectToGalleryReview(`gallery-${reviewStatus === "changes_needed" ? "changes-needed" : reviewStatus}`);
 }

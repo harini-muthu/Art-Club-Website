@@ -35,8 +35,14 @@ function reviewForm(reviewStatus: "approved" | "rejected" | "changes_needed") {
   return data;
 }
 
-function setupGalleryReview({ reviewStatus = "pending" } = {}) {
-  const galleryUpdateEq = vi.fn(async () => ({ error: null }));
+function setupGalleryReview({ reviewStatus = "pending", updatedSubmissionId = "submission-1" }: { reviewStatus?: string; updatedSubmissionId?: string | null } = {}) {
+  const galleryUpdateMaybeSingle = vi.fn(async () => ({
+    data: updatedSubmissionId ? { id: updatedSubmissionId } : null,
+    error: null
+  }));
+  const galleryUpdateSelect = vi.fn(() => ({ maybeSingle: galleryUpdateMaybeSingle }));
+  const galleryUpdateNeq = vi.fn(() => ({ select: galleryUpdateSelect }));
+  const galleryUpdateEq = vi.fn(() => ({ neq: galleryUpdateNeq }));
   const galleryUpdate = vi.fn(() => ({ eq: galleryUpdateEq }));
   const gallerySingle = vi.fn(async () => ({
     data: {
@@ -80,7 +86,13 @@ function setupGalleryReview({ reviewStatus = "pending" } = {}) {
     })
   } as never);
 
-  return { gallerySelect, galleryUpdate, galleryUpdateEq };
+  return {
+    gallerySelect,
+    galleryUpdate,
+    galleryUpdateEq,
+    galleryUpdateNeq,
+    galleryUpdateSelect
+  };
 }
 
 describe("reviewGallerySubmission", () => {
@@ -131,5 +143,34 @@ describe("reviewGallerySubmission", () => {
     expect(gallerySelect).toHaveBeenCalledWith("private_image_path, public_image_path, review_status");
     expect(galleryUpdate).not.toHaveBeenCalled();
     expect(publishGallerySubmissionImage).not.toHaveBeenCalled();
+  });
+
+  it("atomically rejects a review when the submission becomes approved before the update", async () => {
+    const {
+      galleryUpdateEq,
+      galleryUpdateNeq,
+      galleryUpdateSelect
+    } = setupGalleryReview({ updatedSubmissionId: null });
+
+    await expect(reviewGallerySubmission(reviewForm("rejected"))).rejects.toThrow(
+      "REDIRECT:/admin/gallery?error=gallery-invalid"
+    );
+
+    expect(galleryUpdateEq).toHaveBeenCalledWith("id", "submission-1");
+    expect(galleryUpdateNeq).toHaveBeenCalledWith("review_status", "approved");
+    expect(galleryUpdateSelect).toHaveBeenCalledWith("id");
+  });
+
+  it("removes a newly published image when atomic approval loses the update race", async () => {
+    setupGalleryReview({ updatedSubmissionId: null });
+
+    await expect(reviewGallerySubmission(reviewForm("approved"))).rejects.toThrow(
+      "REDIRECT:/admin/gallery?error=gallery-invalid"
+    );
+
+    expect(deleteGalleryPublicImage).toHaveBeenCalledWith(
+      expect.anything(),
+      "approved/submission-1.jpg"
+    );
   });
 });

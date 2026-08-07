@@ -40,11 +40,11 @@ using (is_current_officer())
 with check (is_current_officer());
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('gallery-submissions', 'gallery-submissions', false, 5242880, array['image/jpeg', 'image/png'])
+values ('gallery-submissions', 'gallery-submissions', false, 1048576, array['image/jpeg', 'image/png'])
 on conflict (id) do update set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('gallery-images', 'gallery-images', true, 5242880, array['image/jpeg', 'image/png'])
+values ('gallery-images', 'gallery-images', true, 1048576, array['image/jpeg', 'image/png'])
 on conflict (id) do update set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "Officers can manage private gallery submissions" on storage.objects;

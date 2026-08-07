@@ -2,7 +2,7 @@ import type { GalleryPhoto } from "@/lib/site-data";
 
 type FieldErrors = Record<string, string>;
 
-export const maxGalleryImageSize = 5 * 1024 * 1024;
+export const maxGalleryImageSize = 1 * 1024 * 1024;
 const acceptedGalleryImageTypes = ["image/jpeg", "image/png"];
 
 export type GallerySubmission = {
@@ -67,7 +67,7 @@ export function validateGallerySubmission(formData: FormData): ValidationResult<
   if (!image || !acceptedGalleryImageTypes.includes(image.type)) {
     fieldErrors.image = "Upload a JPG or PNG image.";
   } else if (image.size > maxGalleryImageSize) {
-    fieldErrors.image = "Image must be 5 MB or smaller.";
+    fieldErrors.image = "Image must be 1 MB or smaller.";
   }
 
   if (Object.keys(fieldErrors).length) return { ok: false, fieldErrors };

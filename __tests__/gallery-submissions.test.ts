@@ -13,6 +13,10 @@ function formData(values: Record<string, FormDataEntryValue>) {
 }
 
 describe("gallery submissions", () => {
+  it("uses a 1 MB gallery image limit", () => {
+    expect(maxGalleryImageSize).toBe(1024 * 1024);
+  });
+
   it("normalizes school email for membership matching", () => {
     expect(normalizeSchoolEmail("  MEMBER@School.edu ")).toBe("member@school.edu");
   });

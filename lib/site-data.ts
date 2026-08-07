@@ -29,6 +29,7 @@ export type GalleryPhoto = {
   aspectRatio: string;
   statement: string;
   color: string;
+  imageUrl?: string | null;
 };
 
 export const clubName = "Studio Collective";

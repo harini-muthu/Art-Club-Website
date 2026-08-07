@@ -10,6 +10,7 @@ import {
 } from "@/lib/admin-data";
 import { adminLoginRedirectUrl } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
+import { GALLERY_SUBMISSIONS_BUCKET } from "@/lib/gallery-image-storage";
 
 export type OfficerProfile = {
   id: string;
@@ -98,4 +99,32 @@ export async function getOfficersData() {
   const supabase = await createClient();
   const { data } = await supabase.from("officers").select("id, name, role, email, focus").order("name", { ascending: true });
   return sortOfficersForDisplay((data ?? []) as OfficerRecord[]);
+}
+
+export type AdminGallerySubmission = {
+  id: string;
+  artist_name: string;
+  school_email: string;
+  title: string;
+  class_year: string;
+  medium: string;
+  dimensions: string;
+  statement: string;
+  private_image_path: string;
+  public_image_path?: string | null;
+  public_image_url?: string | null;
+  review_status: "pending" | "approved" | "rejected" | "changes_needed";
+  review_note?: string | null;
+  created_at: string;
+};
+
+export async function getGallerySubmissionsData() {
+  const supabase = await createClient();
+  const { data } = await supabase.from<AdminGallerySubmission>("gallery_submissions")
+    .select("id, artist_name, school_email, title, class_year, medium, dimensions, statement, private_image_path, public_image_path, public_image_url, review_status, review_note, created_at")
+    .order("created_at", { ascending: false });
+  return Promise.all((data ?? []).map(async (submission) => {
+    const { data: signed } = await supabase.storage.from(GALLERY_SUBMISSIONS_BUCKET).createSignedUrl(submission.private_image_path, 900);
+    return { ...submission, reviewImageUrl: signed?.signedUrl ?? null };
+  }));
 }

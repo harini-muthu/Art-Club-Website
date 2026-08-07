@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 const nextConfig = readFileSync(join(process.cwd(), "next.config.mjs"), "utf8");
 
 describe("gallery upload configuration", () => {
-  it("allows the gallery form to send the advertised 5 MB image limit to its server action", () => {
+  it("limits the gallery form to a 1 MB image upload", () => {
     expect(nextConfig).toContain("serverActions");
-    expect(nextConfig).toContain("bodySizeLimit: \"5mb\"");
+    expect(nextConfig).toContain("bodySizeLimit: \"1mb\"");
   });
 });

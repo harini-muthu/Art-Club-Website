@@ -22,6 +22,11 @@ const schoolEmailSql = readFileSync(
   "utf8"
 );
 
+const memberEmailReconciliationSql = readFileSync(
+  join(process.cwd(), "supabase/sql/2026-08-06-member-email-guest-reconciliation.sql"),
+  "utf8"
+);
+
 describe("QR attendance SQL", () => {
   it("creates active guests and links attendance records", () => {
     expect(guestSql).toContain("create table if not exists guests");
@@ -51,6 +56,24 @@ describe("QR attendance SQL", () => {
     expect(schoolEmailSql).toContain("school_email text,");
     expect(schoolEmailSql).toContain("normalized_school_email := lower(btrim(coalesce(school_email, '')));");
     expect(schoolEmailSql).toContain("promote_active_guest_by_email");
+  });
+
+  it("relinks an active exact-email guest when a member email is corrected", () => {
+    expect(memberEmailReconciliationSql).toContain(
+      "after update of email on members"
+    );
+    expect(memberEmailReconciliationSql).toContain(
+      "lower(btrim(active_guest.school_email)) = normalized_member_email"
+    );
+    expect(memberEmailReconciliationSql).toContain(
+      "member_record.member_id = new.id"
+    );
+    expect(memberEmailReconciliationSql).toContain(
+      "set member_id = new.id, guest_id = null"
+    );
+    expect(memberEmailReconciliationSql).toContain(
+      "set archived_at = now()"
+    );
   });
   it("uses Eastern event windows and returns all active activities", () => {
     expect(eventWindowSql).toContain("America/New_York");

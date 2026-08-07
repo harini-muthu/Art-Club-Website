@@ -17,17 +17,24 @@ describe("GalleryGrid", () => {
   });
 
   it("renders artwork in submission order with full-art aspect ratios", () => {
-    const { container } = render(<GalleryGrid photos={galleryPhotos} />);
+    const photos = galleryPhotos.map((photo, index) => index === 0
+      ? { ...photo, imageUrl: "https://images.example.test/sunlit-figure.jpg" }
+      : photo
+    );
+    const { container } = render(<GalleryGrid photos={photos} />);
 
     expect(container.querySelector(".gallery-grid")).toHaveClass("masonry-flow");
     const artworkButtons = screen.getAllByRole("button", {
       name: /Open /
     });
     expect(artworkButtons.map((button) => button.getAttribute("aria-label"))).toEqual(
-      galleryPhotos.map((photo) => `Open ${photo.title}`)
+      photos.map((photo) => `Open ${photo.title}`)
     );
     expect(artworkButtons[0].querySelector(".artwork-preview")).toHaveStyle({
       aspectRatio: "4 / 5"
+    });
+    expect(artworkButtons[0].querySelector("img")).toHaveStyle({
+      objectFit: "contain"
     });
   });
 

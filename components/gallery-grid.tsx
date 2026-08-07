@@ -39,9 +39,12 @@ export function GalleryGrid({ photos }: GalleryGridProps) {
             >
               <div
                 className={`photo-placeholder artwork-preview tone-${photo.color}`}
-                style={{ aspectRatio: photo.aspectRatio }}
+                style={{
+                  aspectRatio: photo.aspectRatio,
+                  background: photo.imageUrl ? "#e7e5e4" : undefined
+                }}
               >
-                {photo.imageUrl ? <Image alt={`${photo.title} by ${photo.artist}`} fill sizes="(max-width: 700px) 100vw, 50vw" src={photo.imageUrl} style={{ objectFit: "cover" }} unoptimized /> : <span>{photo.title}</span>}
+                {photo.imageUrl ? <Image alt={`${photo.title} by ${photo.artist}`} fill sizes="(max-width: 700px) 100vw, 50vw" src={photo.imageUrl} style={{ objectFit: "contain" }} unoptimized /> : <span>{photo.title}</span>}
               </div>
             </button>
           </article>

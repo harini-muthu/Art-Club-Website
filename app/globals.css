@@ -476,9 +476,7 @@ main {
 .artwork-preview {
   position: relative;
   min-height: 0;
-  transition:
-    filter 180ms ease,
-    transform 180ms ease;
+  transition: filter 180ms ease;
 }
 
 .artwork-preview::before {
@@ -490,7 +488,6 @@ main {
 
 .artwork-button:hover .artwork-preview {
   filter: saturate(1.1) contrast(1.05);
-  transform: scale(1.02);
 }
 
 .photo-placeholder {

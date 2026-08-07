@@ -14,17 +14,28 @@ function estimatedHeight(aspectRatio: string) {
   return width > 0 && height > 0 ? height / width : 1;
 }
 
-export function assignPhotosToColumns(photos: GalleryPhoto[]) {
+function photoImageKey(photo: GalleryPhoto) {
+  return `${photo.id}:${photo.imageUrl ?? "fallback"}`;
+}
+
+function assignPhotosToColumnsUsingMeasurements(
+  photos: GalleryPhoto[],
+  measuredHeights: Readonly<Record<string, number>>
+) {
   const columns: [GalleryPhoto[], GalleryPhoto[]] = [[], []];
   const heights = [0, 0];
 
   photos.forEach((photo) => {
     const columnIndex = heights[0] <= heights[1] ? 0 : 1;
     columns[columnIndex].push(photo);
-    heights[columnIndex] += estimatedHeight(photo.aspectRatio);
+    heights[columnIndex] += measuredHeights[photoImageKey(photo)] ?? estimatedHeight(photo.aspectRatio);
   });
 
   return columns;
+}
+
+export function assignPhotosToColumns(photos: GalleryPhoto[]) {
+  return assignPhotosToColumnsUsingMeasurements(photos, {});
 }
 
 function useSingleGalleryColumn() {
@@ -48,8 +59,11 @@ function useSingleGalleryColumn() {
 
 export function GalleryGrid({ photos }: GalleryGridProps) {
   const [selectedArtwork, setSelectedArtwork] = useState<GalleryPhoto | null>(null);
+  const [measuredHeights, setMeasuredHeights] = useState<Record<string, number>>({});
   const isSingleColumn = useSingleGalleryColumn();
-  const columns = isSingleColumn ? [photos] : assignPhotosToColumns(photos);
+  const columns = isSingleColumn
+    ? [photos]
+    : assignPhotosToColumnsUsingMeasurements(photos, measuredHeights);
 
   useEffect(() => {
     if (!selectedArtwork) {
@@ -83,6 +97,20 @@ export function GalleryGrid({ photos }: GalleryGridProps) {
                   <Image
                     alt={`${photo.title} by ${photo.artist}`}
                     height={1200 * estimatedHeight(photo.aspectRatio)}
+                    onLoad={(event) => {
+                      const { naturalHeight, naturalWidth } = event.currentTarget;
+
+                      if (naturalHeight <= 0 || naturalWidth <= 0) {
+                        return;
+                      }
+
+                      const imageKey = photoImageKey(photo);
+                      const measuredHeight = naturalHeight / naturalWidth;
+                      setMeasuredHeights((currentHeights) => currentHeights[imageKey] === measuredHeight
+                        ? currentHeights
+                        : { ...currentHeights, [imageKey]: measuredHeight }
+                      );
+                    }}
                     sizes="(max-width: 560px) 100vw, 50vw"
                     src={photo.imageUrl}
                     style={{ display: "block", height: "auto", width: "100%" }}

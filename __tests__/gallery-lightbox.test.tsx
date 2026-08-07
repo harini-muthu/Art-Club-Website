@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { assignPhotosToColumns, GalleryGrid } from "@/components/gallery-grid";
@@ -38,6 +38,30 @@ describe("GalleryGrid", () => {
       ["sunlit-figure", "blue-hour"],
       ["campus-after-rain", "thread-map"]
     ]);
+  });
+
+  it("balances production uploads using their loaded natural aspect ratios", async () => {
+    const photos = galleryPhotos.slice(0, 3).map((photo, index) => ({
+      ...photo,
+      aspectRatio: "4 / 5",
+      imageUrl: `https://images.example.test/upload-${index}.jpg`
+    }));
+
+    render(<GalleryGrid photos={photos} />);
+
+    const columns = screen.getAllByTestId("gallery-column");
+    expect(within(columns[0]).getByRole("button", { name: "Open Thread Map" })).toBeVisible();
+
+    const firstImage = screen.getByRole("img", { name: "Sunlit Figure by Mina Alvarez" });
+    Object.defineProperties(firstImage, {
+      naturalWidth: { configurable: true, value: 1000 },
+      naturalHeight: { configurable: true, value: 2000 }
+    });
+    fireEvent.load(firstImage);
+
+    await waitFor(() => {
+      expect(within(columns[1]).getByRole("button", { name: "Open Thread Map" })).toBeVisible();
+    });
   });
 
   it("opens a high-quality artwork view with artist information", async () => {

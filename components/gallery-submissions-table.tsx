@@ -18,7 +18,7 @@ export function GallerySubmissionsTable({ submissions, deleteSubmission, reviewS
       <div className="admin-list">{needsReview.map((submission) => <article className="admin-row editable" key={submission.id}>
         <div className="admin-row-summary compact">
           {submission.reviewImageUrl ? <Image alt={`${submission.title} by ${submission.artist_name}`} className="admin-activity-thumbnail" height={90} src={submission.reviewImageUrl} unoptimized width={90} /> : null}
-          <div><h3>{submission.title}</h3><p>{submission.artist_name} · Class of {submission.class_year}</p>{submission.dimensions ? <p>{submission.medium} · {submission.dimensions}</p> : null}<p>Status: {submission.review_status}</p></div>
+          <div><h3>{submission.title}</h3><p>{submission.artist_name} · Class of {submission.class_year}</p><p>{submission.medium}{submission.dimensions ? ` · ${submission.dimensions}` : ""}</p><p>Status: {submission.review_status}</p></div>
         </div>
         {submission.statement ? <p>{submission.statement}</p> : null}
         <div className="admin-row-actions">

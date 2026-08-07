@@ -46,6 +46,20 @@ describe("GalleryGrid", () => {
     expect(within(dialog).getByText("Mina Alvarez")).toBeVisible();
     expect(within(dialog).getByText("Oil and acrylic on canvas")).toBeVisible();
     expect(within(dialog).getByText("Class of 2027")).toBeVisible();
+    expect(within(dialog).getByText("Size")).toBeVisible();
+    expect(within(dialog).getByText("24 x 30 in.")).toBeVisible();
+    expect(within(dialog).getByText(/caught between stillness and motion/)).toBeVisible();
+  });
+
+  it("omits empty optional details from the artwork view", async () => {
+    const user = userEvent.setup();
+    render(<GalleryGrid photos={[{ ...galleryPhotos[0], dimensions: "", statement: "" }]} />);
+
+    await user.click(screen.getByRole("button", { name: "Open Sunlit Figure" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByText("Size")).not.toBeInTheDocument();
+    expect(dialog.querySelectorAll(".lightbox-details > p:not(.eyebrow)")).toHaveLength(0);
   });
 
   it("closes the artwork view", async () => {

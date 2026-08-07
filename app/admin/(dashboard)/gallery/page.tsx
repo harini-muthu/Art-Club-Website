@@ -6,8 +6,12 @@ export default async function GallerySubmissionsPage({ searchParams }: { searchP
   const params = await searchParams;
   await getAuthorizedOfficerProfile();
   const submissions = await getGallerySubmissionsData();
-  const message = params.status === "gallery-reviewed"
+  const message = params.status === "gallery-approved"
     ? "Artwork approved and published."
+    : params.status === "gallery-rejected"
+      ? "Artwork rejected."
+      : params.status === "gallery-changes-needed"
+        ? "Changes requested."
     : params.status === "gallery-deleted"
       ? "Artwork deleted."
       : null;

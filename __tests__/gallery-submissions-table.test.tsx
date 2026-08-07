@@ -40,10 +40,8 @@ const approvedSubmission = {
   reviewImageUrl: "https://example.com/approved.jpg"
 };
 
-const actions = {
-  deleteSubmission: async () => {},
-  reviewSubmission: async () => {}
-};
+const formAction = "/admin/gallery" as unknown as (formData: FormData) => Promise<void>;
+const actions = { deleteSubmission: formAction, reviewSubmission: formAction };
 
 describe("GallerySubmissionsTable", () => {
   it("renders approved artwork only in the compact published section", () => {
@@ -61,8 +59,8 @@ describe("GallerySubmissionsTable", () => {
     expect(within(publishedSection).queryByRole("button", { name: "Needs changes" })).not.toBeInTheDocument();
     expect(within(publishedSection).queryByRole("button", { name: "Reject" })).not.toBeInTheDocument();
     expect(within(publishedSection).queryByRole("textbox", { name: "Review note" })).not.toBeInTheDocument();
-    expect(within(pendingArticle).queryByText(/Oil on canvas/)).not.toBeInTheDocument();
-    expect(pendingArticle.querySelectorAll("p")).toHaveLength(2);
+    expect(within(pendingArticle).getByText("Oil on canvas")).toBeInTheDocument();
+    expect(pendingArticle.querySelectorAll("p")).toHaveLength(3);
 
     fireEvent.click(within(publishedSection).getByRole("button", { name: "Delete" }));
     expect(confirmSpy).toHaveBeenCalledWith("Are you sure you want to delete this artwork?");
@@ -82,9 +80,19 @@ describe("GallerySubmissionsPage", () => {
   });
 
   it("shows an approval receipt after an artwork is published", async () => {
-    render(await GallerySubmissionsPage({ searchParams: Promise.resolve({ status: "gallery-reviewed" }) }));
+    render(await GallerySubmissionsPage({ searchParams: Promise.resolve({ status: "gallery-approved" }) }));
 
     expect(screen.getByRole("status")).toHaveTextContent("Artwork approved and published.");
+  });
+
+  it.each([
+    ["gallery-rejected", "Artwork rejected."],
+    ["gallery-changes-needed", "Changes requested."]
+  ])("shows the matching receipt for %s", async (status, message) => {
+    render(await GallerySubmissionsPage({ searchParams: Promise.resolve({ status }) }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(message);
+    expect(screen.getByRole("status")).not.toHaveTextContent("Artwork approved and published.");
   });
 
   it("shows a deletion receipt after an artwork is deleted", async () => {

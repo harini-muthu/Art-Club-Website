@@ -562,8 +562,8 @@ export async function reviewGallerySubmission(formData: FormData) {
   const reviewNote = formData.get("reviewNote");
   if (typeof submissionId !== "string" || !submissionId || !["approved", "rejected", "changes_needed"].includes(String(reviewStatus))) redirectToAdminWithError("gallery-invalid");
   const { supabase, officerProfile } = await getAuthorizedAdminClient();
-  const { data: submission } = await supabase.from<{ private_image_path: string; public_image_path: string | null }>("gallery_submissions").select("private_image_path, public_image_path").eq("id", submissionId).single();
-  if (!submission) redirectToAdminWithError("gallery-invalid");
+  const { data: submission } = await supabase.from<{ private_image_path: string; public_image_path: string | null; review_status: string }>("gallery_submissions").select("private_image_path, public_image_path, review_status").eq("id", submissionId).single();
+  if (!submission || submission.review_status === "approved") redirectToAdminWithError("gallery-invalid");
 
   const update: Record<string, unknown> = { review_status: reviewStatus, review_note: typeof reviewNote === "string" ? reviewNote.trim() || null : null, reviewer_id: officerProfile.id, reviewed_at: new Date().toISOString() };
   if (reviewStatus === "approved" && !submission.public_image_path) {
@@ -577,7 +577,7 @@ export async function reviewGallerySubmission(formData: FormData) {
     if (typeof update.public_image_path === "string") await deleteGalleryPublicImage(supabase, update.public_image_path);
     redirectToAdminWithError("gallery-save-failed");
   }
-  redirectToGalleryReview("gallery-reviewed");
+  redirectToGalleryReview(`gallery-${reviewStatus === "changes_needed" ? "changes-needed" : reviewStatus}`);
 }
 
 export async function deleteGallerySubmission(formData: FormData) {

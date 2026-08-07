@@ -92,12 +92,12 @@ export function GalleryGrid({ photos }: GalleryGridProps) {
                   <dt>Medium</dt>
                   <dd>{selectedArtwork.medium}</dd>
                 </div>
-                <div>
+                {selectedArtwork.dimensions ? <div>
                   <dt>Size</dt>
                   <dd>{selectedArtwork.dimensions}</dd>
-                </div>
+                </div> : null}
               </dl>
-              <p>{selectedArtwork.statement}</p>
+              {selectedArtwork.statement ? <p>{selectedArtwork.statement}</p> : null}
             </div>
           </section>
         </div>

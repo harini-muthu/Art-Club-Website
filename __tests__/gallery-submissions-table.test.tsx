@@ -1,7 +1,20 @@
 import React from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import GallerySubmissionsPage from "@/app/admin/(dashboard)/gallery/page";
 import { GallerySubmissionsTable } from "@/components/gallery-submissions-table";
+import { getAuthorizedOfficerProfile, getGallerySubmissionsData } from "@/lib/admin-dashboard";
+
+vi.mock("@/lib/admin-dashboard", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/admin-dashboard")>()),
+  getAuthorizedOfficerProfile: vi.fn(),
+  getGallerySubmissionsData: vi.fn()
+}));
+
+vi.mock("@/app/admin/actions", () => ({
+  deleteGallerySubmission: "/admin/gallery",
+  reviewGallerySubmission: "/admin/gallery"
+}));
 
 const pendingSubmission = {
   id: "submission-pending",
@@ -54,5 +67,29 @@ describe("GallerySubmissionsTable", () => {
     fireEvent.click(within(publishedSection).getByRole("button", { name: "Delete" }));
     expect(confirmSpy).toHaveBeenCalledWith("Are you sure you want to delete this artwork?");
     confirmSpy.mockRestore();
+  });
+});
+
+describe("GallerySubmissionsPage", () => {
+  beforeEach(() => {
+    vi.mocked(getAuthorizedOfficerProfile).mockResolvedValue({
+      id: "officer-1",
+      name: "Avery Artist",
+      role: "President",
+      email: "avery@school.edu"
+    });
+    vi.mocked(getGallerySubmissionsData).mockResolvedValue([]);
+  });
+
+  it("shows an approval receipt after an artwork is published", async () => {
+    render(await GallerySubmissionsPage({ searchParams: Promise.resolve({ status: "gallery-reviewed" }) }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Artwork approved and published.");
+  });
+
+  it("shows a deletion receipt after an artwork is deleted", async () => {
+    render(await GallerySubmissionsPage({ searchParams: Promise.resolve({ status: "gallery-deleted" }) }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Artwork deleted.");
   });
 });

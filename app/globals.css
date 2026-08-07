@@ -300,7 +300,6 @@ main {
 
 .event-grid,
 .officer-grid,
-.gallery-grid,
 .feature-list,
 .steps {
   display: grid;
@@ -317,17 +316,10 @@ main {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.gallery-grid {
-  display: block;
-  column-count: 3;
-  column-gap: 18px;
-}
-
 .event-card,
 .feature-list article,
 .steps article,
 .officer-card,
-.gallery-card,
 .meeting-card,
 .contact-form,
 .contact-note {
@@ -449,12 +441,18 @@ main {
   font-weight: 900;
 }
 
-.gallery-card {
-  display: inline-block;
-  width: 100%;
-  margin: 0 0 18px;
-  overflow: hidden;
-  break-inside: avoid;
+.gallery-columns {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.gallery-column {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
 }
 
 .artwork-button {
@@ -468,30 +466,20 @@ main {
   border: 0;
 }
 
+.artwork-fallback {
+  display: grid;
+  width: 100%;
+  min-height: 150px;
+  padding: 16px;
+  place-items: end start;
+  color: white;
+  font-family: var(--font-display), Arial, sans-serif;
+  font-weight: 900;
+}
+
 .artwork-button:focus-visible {
   outline: 4px solid #f0abfc;
   outline-offset: -4px;
-}
-
-.artwork-preview {
-  position: relative;
-  min-height: 0;
-  transition: filter 180ms ease;
-}
-
-.artwork-preview::before {
-  position: absolute;
-  inset: 18px;
-  content: "";
-  border: 1px solid rgba(255, 255, 255, 0.45);
-}
-
-.artwork-button:hover .artwork-preview {
-  filter: saturate(1.1) contrast(1.05);
-}
-
-.photo-placeholder {
-  border-radius: 0;
 }
 
 .lightbox-backdrop {
@@ -1446,10 +1434,6 @@ main {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .gallery-grid {
-    column-count: 2;
-  }
-
   .lightbox-panel {
     grid-template-columns: 1fr;
   }
@@ -1503,8 +1487,12 @@ main {
     grid-template-columns: 1fr;
   }
 
-  .gallery-grid {
-    column-count: 1;
+  .gallery-columns {
+    display: block;
+  }
+
+  .gallery-column {
+    gap: 18px;
   }
 
   .admin-stats,

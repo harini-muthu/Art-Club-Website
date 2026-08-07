@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import type { GalleryPhoto } from "@/lib/site-data";
 
 type GalleryGridProps = {
@@ -40,7 +41,7 @@ export function GalleryGrid({ photos }: GalleryGridProps) {
                 className={`photo-placeholder artwork-preview tone-${photo.color}`}
                 style={{ aspectRatio: photo.aspectRatio }}
               >
-                <span>{photo.title}</span>
+                {photo.imageUrl ? <Image alt={`${photo.title} by ${photo.artist}`} fill sizes="(max-width: 700px) 100vw, 50vw" src={photo.imageUrl} style={{ objectFit: "cover" }} unoptimized /> : <span>{photo.title}</span>}
               </div>
             </button>
           </article>
@@ -73,7 +74,7 @@ export function GalleryGrid({ photos }: GalleryGridProps) {
               className={`lightbox-art tone-${selectedArtwork.color}`}
               style={{ aspectRatio: selectedArtwork.aspectRatio }}
             >
-              <span>{selectedArtwork.title}</span>
+              {selectedArtwork.imageUrl ? <Image alt={`${selectedArtwork.title} by ${selectedArtwork.artist}`} fill sizes="90vw" src={selectedArtwork.imageUrl} style={{ objectFit: "contain" }} unoptimized /> : <span>{selectedArtwork.title}</span>}
             </div>
             <div className="lightbox-details">
               <p className="eyebrow">Member submission</p>

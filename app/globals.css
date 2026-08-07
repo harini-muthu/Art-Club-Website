@@ -356,6 +356,8 @@ main {
 
 .image-tile,
 .photo-placeholder {
+  position: relative;
+  overflow: hidden;
   display: grid;
   min-height: 150px;
   place-items: end start;
@@ -365,6 +367,22 @@ main {
   font-family: var(--font-display), Arial, sans-serif;
   font-weight: 900;
 }
+
+.gallery-submission-form,
+.gallery-submit-message {
+  display: grid;
+  max-width: 680px;
+  gap: 16px;
+  padding: 24px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.gallery-submission-form label { display: grid; gap: 7px; font-weight: 800; }
+.gallery-submission-form input, .gallery-submission-form textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.form-error { color: #a42222; font-weight: 700; }
 
 .event-image {
   min-height: 150px;
@@ -526,6 +544,8 @@ main {
 }
 
 .lightbox-art {
+  position: relative;
+  overflow: hidden;
   display: grid;
   min-height: 0;
   place-items: center;

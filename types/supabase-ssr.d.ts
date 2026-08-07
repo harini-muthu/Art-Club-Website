@@ -51,6 +51,14 @@ declare module "@supabase/ssr" {
     };
 
   type SupabaseStorageBucket = {
+    createSignedUrl(path: string, expiresIn: number): Promise<{
+      data: { signedUrl: string } | null;
+      error: { message: string } | null;
+    }>;
+    download(path: string): Promise<{
+      data: Blob | null;
+      error: { message: string } | null;
+    }>;
     getPublicUrl(path: string): { data: { publicUrl: string } };
     remove(paths: string[]): Promise<{
       data: unknown[] | null;
@@ -58,7 +66,7 @@ declare module "@supabase/ssr" {
     }>;
     upload(
       path: string,
-      file: File,
+      file: File | Blob,
       options?: { contentType?: string; upsert?: boolean }
     ): Promise<{
       data: { path: string } | null;

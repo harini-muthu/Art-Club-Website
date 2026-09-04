@@ -1,12 +1,13 @@
 import { PageSection } from "@/components/page-section";
 import { GalleryGrid } from "@/components/gallery-grid";
+import { galleryPhotos } from "@/lib/site-data";
 import { approvedSubmissionToGalleryPhoto, type ApprovedGallerySubmission } from "@/lib/gallery-submissions";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
 async function getGalleryPhotos() {
-  if (!hasSupabaseBrowserConfig()) return [];
+  if (!hasSupabaseBrowserConfig()) return galleryPhotos;
   try {
     const supabase = await createClient();
     const { data } = await supabase.from<ApprovedGallerySubmission>("gallery_submissions")

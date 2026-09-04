@@ -41,13 +41,8 @@ declare module "@supabase/ssr" {
     update(row: unknown): SupabaseFilterBuilder<T>;
   };
 
-  type SupabaseFilterBuilder<T = Record<string, unknown>> = PromiseLike<
-    SupabasePayload<T>
-  > & {
-    eq(column: string, value: string): SupabaseFilterBuilder<T>;
-    maybeSingle(): SupabaseResult<T>;
-    neq(column: string, value: string): SupabaseFilterBuilder<T>;
-    select(columns: string): SupabaseFilterBuilder<T>;
+  type SupabaseFilterBuilder<T = Record<string, unknown>> = {
+    eq(column: string, value: string): SupabaseResult<T>;
   };
 
   type SupabaseMutationBuilder<T = Record<string, unknown>> =
@@ -56,14 +51,6 @@ declare module "@supabase/ssr" {
     };
 
   type SupabaseStorageBucket = {
-    createSignedUrl(path: string, expiresIn: number): Promise<{
-      data: { signedUrl: string } | null;
-      error: { message: string } | null;
-    }>;
-    download(path: string): Promise<{
-      data: Blob | null;
-      error: { message: string } | null;
-    }>;
     getPublicUrl(path: string): { data: { publicUrl: string } };
     remove(paths: string[]): Promise<{
       data: unknown[] | null;
@@ -71,7 +58,7 @@ declare module "@supabase/ssr" {
     }>;
     upload(
       path: string,
-      file: File | Blob,
+      file: File,
       options?: { contentType?: string; upsert?: boolean }
     ): Promise<{
       data: { path: string } | null;

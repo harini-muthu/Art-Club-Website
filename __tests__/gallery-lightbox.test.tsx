@@ -3,7 +3,14 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { assignPhotosToColumns, GalleryGrid } from "@/components/gallery-grid";
-import { galleryPhotos } from "@/lib/site-data";
+import type { GalleryPhoto } from "@/lib/site-data";
+
+const galleryPhotos: GalleryPhoto[] = [
+  { id: "sunlit-figure", title: "Sunlit Figure", caption: "", artist: "Mina Alvarez", year: "Class of 2027", medium: "Oil and acrylic on canvas", dimensions: "24 x 30 in.", aspectRatio: "4 / 5", statement: "I wanted the figure to feel caught between stillness and motion.", color: "violet", imageUrl: null },
+  { id: "campus-after-rain", title: "Campus After Rain", caption: "", artist: "Theo Martin", year: "Class of 2026", medium: "Ink and watercolor", dimensions: "18 x 24 in.", aspectRatio: "3 / 4", statement: "", color: "teal", imageUrl: null },
+  { id: "thread-map", title: "Thread Map", caption: "", artist: "Nia Brooks", year: "Class of 2025", medium: "Fiber", dimensions: "32 x 28 in.", aspectRatio: "8 / 7", statement: "", color: "amber", imageUrl: null },
+  { id: "blue-hour", title: "Blue Hour", caption: "", artist: "Rae Kim", year: "Class of 2028", medium: "Digital painting", dimensions: "3600 x 4800 px", aspectRatio: "3 / 4", statement: "", color: "rose", imageUrl: null }
+];
 
 describe("GalleryGrid", () => {
   it("keeps artwork metadata out of the main grid", () => {

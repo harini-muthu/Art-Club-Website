@@ -3,6 +3,11 @@ export type SupabaseBrowserConfig = {
   publishableKey: string;
 };
 
+export type OfficerProvisioningConfig = SupabaseBrowserConfig & {
+  serviceRoleKey: string;
+  sharedPassword: string;
+};
+
 const missingConfigError =
   "Supabase environment variables are not configured.";
 
@@ -23,4 +28,16 @@ export function getSupabaseBrowserConfig(): SupabaseBrowserConfig {
   }
 
   return { url, publishableKey };
+}
+
+export function getOfficerProvisioningConfig(): OfficerProvisioningConfig {
+  const browserConfig = getSupabaseBrowserConfig();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
+  const sharedPassword = process.env.OFFICER_SHARED_PASSWORD ?? "";
+
+  if (!serviceRoleKey || !sharedPassword) {
+    throw new Error("Officer provisioning environment variables are not configured.");
+  }
+
+  return { ...browserConfig, serviceRoleKey, sharedPassword };
 }

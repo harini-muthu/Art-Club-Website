@@ -1,7 +1,8 @@
 import { AdminLoginForm } from "@/app/admin/login/login-form";
+import { clubName } from "@/lib/site-data";
 
 export const metadata = {
-  title: "Admin Login | Studio Collective"
+  title: `Admin Login | ${clubName}`
 };
 
 type AdminLoginPageProps = {

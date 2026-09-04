@@ -3,10 +3,11 @@ import {
   attendanceStatusMessage,
   getTodayAttendanceActivity
 } from "@/lib/attendance";
+import { clubName } from "@/lib/site-data";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
-  title: "Attendance | Studio Collective"
+  title: `Attendance | ${clubName}`
 };
 
 type AttendancePageProps = {
@@ -61,7 +62,7 @@ export default async function AttendancePage({
   return (
     <section className="attendance-page">
       <div className="attendance-panel">
-        <p className="eyebrow">Studio Collective</p>
+        <p className="eyebrow">{clubName}</p>
         <h1>Attendance check-in</h1>
         {message ? (
           <p

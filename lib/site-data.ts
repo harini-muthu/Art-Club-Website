@@ -31,9 +31,17 @@ export type GalleryPhoto = {
   color: string;
 };
 
-export const clubName = "Studio Collective";
+export const clubName = "Purdue Art Community";
 
-export const clubEmail = "studio.collective@example.edu";
+export const clubInitials = "PAC";
+
+export const clubEmail = "purdueartcommunity@example.edu";
+
+export const clubInstagramHandle = "@purdueartcommunity";
+
+export const clubInstagramUrl = "https://www.instagram.com/purdueartcommunity/";
+
+export const clubGroupMeUrl = "https://groupme.com/join_group/70944782/fyj62Zqd";
 
 export const navItems: NavItem[] = [
   { label: "Events", href: "/" },

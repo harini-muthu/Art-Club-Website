@@ -1,0 +1,9 @@
+.next/
+node_modules/
+out/
+coverage/
+.npm-cache/
+.env*.local
+.superpowers/
+.DS_Store
+github-upload-ready/

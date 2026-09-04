@@ -118,8 +118,8 @@ export default async function EventsPage() {
           <p className="eyebrow">Club events</p>
           <h1>{clubName}</h1>
           <p>
-            A student creative club for showcases, workshops, collaborations,
-            and campus projects that need a little more imagination.
+            A weekly space to relax and be creative. Try different mediums, use
+            our materials, and join in—no experience necessary.
           </p>
           <div className="hero-actions">
             <Link className="button primary" href="/contact">

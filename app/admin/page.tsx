@@ -5,8 +5,9 @@ import { AdminEntryForms } from "@/components/admin-entry-forms";
 import { buildAdminDashboardStats } from "@/lib/admin-data";
 import { getOverviewData } from "@/lib/admin-dashboard";
 import { getAttendanceQrOrigin, getLocalLanAddress } from "@/lib/request-origin";
+import { clubName } from "@/lib/site-data";
 
-export const metadata = { title: "Admin | Studio Collective" };
+export const metadata = { title: `Admin | ${clubName}` };
 
 async function getRequestOrigin() {
   const requestHeaders = await headers();

@@ -20,13 +20,18 @@ describe("AboutPage", () => {
     } as never);
   });
 
-  it("shows meeting time instead of audience and involvement sections", async () => {
+  it("shows the Purdue Art Community intro and contact details without the old mission/time sections", async () => {
     render(await AboutPage());
 
-    expect(screen.getByRole("heading", { name: "Meeting date and time" })).toBeVisible();
-    expect(screen.getByText("Every Wednesday at 6:30 PM")).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "Who it is for" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "How to get involved" })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Purdue Art Community is a space for students to relax and be creative each week. We value exposing our members to different mediums and provide access to all materials. No experience necessary!"
+      )
+    ).toBeVisible();
+    expect(screen.getByText("@purdueartcommunity")).toBeVisible();
+    expect(screen.getByText("Join the group chat")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Club mission" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Meeting date and time" })).not.toBeInTheDocument();
   });
 
   it("renders dynamic public officers without exposing private emails", async () => {

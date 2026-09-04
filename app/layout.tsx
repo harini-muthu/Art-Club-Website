@@ -23,7 +23,10 @@ const permanentMarker = Permanent_Marker({
 export const metadata: Metadata = {
   title: `${clubName} | Events`,
   description:
-    "A public events, gallery, about, and contact website for a student creative club."
+    "A public events, gallery, about, and contact website for a student creative club.",
+  icons: {
+    icon: "/PAC_logo.png"
+  }
 };
 
 export default function RootLayout({

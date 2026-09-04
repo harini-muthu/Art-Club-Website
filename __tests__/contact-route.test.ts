@@ -26,9 +26,9 @@ describe("POST /api/contact", () => {
     process.env = {
       ...envBackup,
       RESEND_API_KEY: "test-key",
-      CONTACT_TO_EMAIL: "club@example.edu",
-      CONTACT_FROM_EMAIL: "Studio Collective <contact@example.edu>",
-      CONTACT_REPLY_NAME: "Studio Collective"
+      CONTACT_TO_EMAIL: "purdueartcommunity@example.edu",
+      CONTACT_FROM_EMAIL: "Purdue Art Community <contact@example.edu>",
+      CONTACT_REPLY_NAME: "Purdue Art Community"
     };
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ id: "email-id" }), { status: 200 })
@@ -55,15 +55,15 @@ describe("POST /api/contact", () => {
       }
     });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
-      from: "Studio Collective <contact@example.edu>",
-      to: ["club@example.edu"],
+      from: "Purdue Art Community <contact@example.edu>",
+      to: ["purdueartcommunity@example.edu"],
       reply_to: "student@example.edu",
-      subject: "Studio Collective contact: Event/collaboration"
+      subject: "Purdue Art Community contact: Event/collaboration"
     });
     expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({
-      from: "Studio Collective <contact@example.edu>",
+      from: "Purdue Art Community <contact@example.edu>",
       to: ["student@example.edu"],
-      subject: "We received your Studio Collective message"
+      subject: "We received your Purdue Art Community message"
     });
   });
 

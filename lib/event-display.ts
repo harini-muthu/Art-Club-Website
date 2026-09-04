@@ -1,5 +1,3 @@
-import { EventItem } from "@/lib/site-data";
-
 export type PublicMeetingRow = {
   id: string;
   activity?: string | null;
@@ -98,23 +96,6 @@ export function buildPublicEventsFromMeetings(
       imageAlt: meeting.image_alt || meeting.activity || "Art club event"
     }))
     .sort((a, b) => a.eventDate.localeCompare(b.eventDate));
-}
-
-export function buildPublicEventsFromStaticEvents(
-  staticEvents: EventItem[]
-): PublicEvent[] {
-  return staticEvents.map((event, index) => ({
-    id: `sample-${index}`,
-    title: event.title,
-    dateLabel: event.date,
-    eventDate: event.eventDate,
-    time: event.time,
-    location: event.location,
-    description: event.description,
-    imageTone: event.imageTone,
-    imageUrl: event.imageUrl,
-    imageAlt: event.imageAlt || event.title
-  }));
 }
 
 export function selectHighlightedEvent(

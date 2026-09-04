@@ -90,7 +90,7 @@ describe("admin entry validation", () => {
         email: " harini@example.edu ",
         notes: "Paid at first meeting",
         membershipType: "semester",
-        paidAmount: "15"
+        paidAmount: "15.50"
       }),
       new Date("2026-08-26T12:00:00Z")
     );
@@ -107,7 +107,7 @@ describe("admin entry validation", () => {
           membership_type: "semester",
           starts_on: "2026-08-26",
           expires_on: "2026-12-31",
-          paid_amount: 15
+          paid_amount: "15.50"
         }
       }
     });

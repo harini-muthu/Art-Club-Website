@@ -1,9 +1,0 @@
-.worktrees/
-node_modules/
-.next/
-out/
-coverage/
-.npm-cache/
-.env*.local
-.DS_Store
-tsconfig.tsbuildinfo

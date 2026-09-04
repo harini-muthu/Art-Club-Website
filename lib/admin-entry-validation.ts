@@ -20,7 +20,7 @@ export type MemberSubmission = {
     membership_type: MembershipType;
     starts_on: string;
     expires_on: string;
-    paid_amount: number | null;
+    paid_amount: string | null;
   };
 };
 
@@ -168,7 +168,7 @@ export function validateMemberSubmission(
   const notes = readField(formData, "notes");
   const membershipType = readField(formData, "membershipType");
   const paidAmountInput = readField(formData, "paidAmount");
-  const paidAmount = paidAmountInput ? Number(paidAmountInput) : null;
+  const paidAmount = paidAmountInput || null;
   const fieldErrors: FieldErrors = {};
 
   if (!fullName) {
@@ -183,7 +183,7 @@ export function validateMemberSubmission(
     fieldErrors.membershipType = "Choose semester or year.";
   }
 
-  if (paidAmount !== null && (!Number.isFinite(paidAmount) || paidAmount < 0)) {
+  if (paidAmount !== null && !/^\d+(\.\d{1,2})?$/.test(paidAmount)) {
     fieldErrors.paidAmount = "Paid amount must be zero or more.";
   }
 

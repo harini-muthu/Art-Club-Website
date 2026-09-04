@@ -23,7 +23,7 @@ describe("AttendancePage", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the name-only check-in form when exactly one activity is open today", async () => {
+  it("shows required name and school email fields when exactly one activity is open today", async () => {
     setupRpc({
       status: "open",
       meeting_id: "meeting-1",
@@ -40,7 +40,37 @@ describe("AttendancePage", () => {
     ).toBeVisible();
     expect(screen.getByText("Open Studio")).toBeVisible();
     expect(screen.getByLabelText("Name")).toBeVisible();
+    expect(screen.getByLabelText("School Email")).toBeRequired();
     expect(screen.getByRole("button", { name: "Check in" })).toBeVisible();
+    expect(screen.getByDisplayValue("meeting-1")).toHaveAttribute("type", "hidden");
+  });
+
+  it("requires attendees to choose among simultaneous active activities", async () => {
+    setupRpc([
+      {
+        status: "open",
+        meeting_id: "meeting-1",
+        activity: "Open Studio",
+        meeting_date: "2026-07-20",
+        starts_at: "18:30",
+        location: "Art Room"
+      },
+      {
+        status: "open",
+        meeting_id: "meeting-2",
+        activity: "Figure Drawing",
+        meeting_date: "2026-07-20",
+        starts_at: "19:00",
+        location: "Library"
+      }
+    ]);
+
+    render(await AttendancePage({ searchParams: Promise.resolve({}) }));
+
+    const eventSelect = screen.getByLabelText("Activity");
+    expect(eventSelect).toBeRequired();
+    expect(screen.getByRole("option", { name: /Open Studio.*Art Room/ })).toHaveValue("meeting-1");
+    expect(screen.getByRole("option", { name: /Figure Drawing.*Library/ })).toHaveValue("meeting-2");
   });
 
   it("shows a closed state instead of a form when today is unavailable", async () => {

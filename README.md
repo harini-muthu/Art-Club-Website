@@ -9,7 +9,7 @@ Public website for a college art club with events, about, gallery, and contact p
 ## Current Features
 
 - Events homepage focused on recent completed club events
-- About page with the community blurb, social links, and officers
+- About page with club mission, meeting time, and officers
 - Gallery page for member-submitted artwork
 - Artwork detail modal with artist, medium, dimensions, and statement
 - Contact page with validated form UI
@@ -72,9 +72,9 @@ Copy `.env.example` to `.env.local` when testing locally. Never commit
 
 ```env
 RESEND_API_KEY=
-CONTACT_TO_EMAIL=purdueartcommunity@example.edu
-CONTACT_FROM_EMAIL=Purdue Art Community <contact@example.edu>
-CONTACT_REPLY_NAME=Purdue Art Community
+CONTACT_TO_EMAIL=studio.collective@example.edu
+CONTACT_FROM_EMAIL=Studio Collective <contact@example.edu>
+CONTACT_REPLY_NAME=Studio Collective
 ```
 
 Email sending is intentionally safe when these values are missing: the contact form will show a fallback message instead of pretending a message was sent.

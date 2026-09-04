@@ -12,13 +12,13 @@ export type AttendanceActivityRpcResponse = {
 export type AttendancePageState =
   | {
       status: "open";
-      activity: {
+      activities: Array<{
         id: string;
         activity: string;
         meetingDate: string;
         startsAt: string | null;
         location: string | null;
-      };
+      }>;
     }
   | {
       status: "closed";
@@ -106,29 +106,40 @@ export function mapAttendanceActivityResponse(
     | null
     | undefined
 ): AttendancePageState {
-  const activityResponse = Array.isArray(response) ? response[0] : response;
+  const activityResponses = Array.isArray(response)
+    ? response
+    : response
+      ? [response]
+      : [];
+  const activities = activityResponses.flatMap((activityResponse) => {
+    if (
+      activityResponse.status !== "open" ||
+      !activityResponse.meeting_id ||
+      !activityResponse.activity ||
+      !activityResponse.meeting_date
+    ) {
+      return [];
+    }
 
-  if (
-    activityResponse?.status === "open" &&
-    activityResponse.meeting_id &&
-    activityResponse.activity &&
-    activityResponse.meeting_date
-  ) {
+    return [{
+      id: activityResponse.meeting_id,
+      activity: activityResponse.activity,
+      meetingDate: activityResponse.meeting_date,
+      startsAt: activityResponse.starts_at ?? null,
+      location: activityResponse.location ?? null
+    }];
+  });
+
+  if (activities.length) {
     return {
       status: "open",
-      activity: {
-        id: activityResponse.meeting_id,
-        activity: activityResponse.activity,
-        meetingDate: activityResponse.meeting_date,
-        startsAt: activityResponse.starts_at ?? null,
-        location: activityResponse.location ?? null
-      }
+      activities
     };
   }
 
   return {
     status: "closed",
-    reason: activityResponse?.status === "ambiguous" ? "ambiguous" : "closed"
+    reason: activityResponses[0]?.status === "ambiguous" ? "ambiguous" : "closed"
   };
 }
 
@@ -194,10 +205,12 @@ export async function getTodayAttendanceActivity(client: AttendanceRpcClient) {
 
 export async function recordTodayAttendance(
   client: AttendanceRpcClient,
-  submission: { attendeeName: string; honeypot: string }
+  submission: { attendeeName: string; schoolEmail: string; meetingId: string; honeypot: string }
 ) {
   const args = {
     attendee_name: submission.attendeeName,
+    school_email: submission.schoolEmail,
+    meeting_id: submission.meetingId,
     honeypot: submission.honeypot
   };
   const { data, error } =

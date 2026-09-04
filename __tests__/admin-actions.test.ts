@@ -289,7 +289,7 @@ describe("admin data entry actions", () => {
           email: "harini@example.edu",
           notes: "Paid in cash",
           membershipType: "year",
-          paidAmount: "25"
+          paidAmount: "25.50"
         })
       )
     ).rejects.toThrow("REDIRECT:/admin/memberships?status=member-added");
@@ -304,7 +304,7 @@ describe("admin data entry actions", () => {
       membership_type: "year",
       starts_on: "2026-07-17",
       expires_on: "2027-05-31",
-      paid_amount: 25,
+      paid_amount: "25.50",
       added_by: "Officer One"
     });
     expect(revalidatePath).toHaveBeenCalledWith("/admin/memberships");
@@ -743,7 +743,7 @@ describe("admin data entry actions", () => {
           originalMembershipType: "semester",
           startsOn: "2026-07-17",
           expiresOn: "2026-12-31",
-          paidAmount: "15"
+          paidAmount: "15.50"
         })
       )
     ).rejects.toThrow("REDIRECT:/admin/memberships?status=member-updated");
@@ -758,7 +758,7 @@ describe("admin data entry actions", () => {
       membership_type: "semester",
       starts_on: "2026-07-17",
       expires_on: "2026-12-31",
-      paid_amount: 15
+      paid_amount: "15.50"
     });
     expect(membershipUpdateEq).toHaveBeenCalledWith("id", "membership-1");
     expect(revalidatePath).toHaveBeenCalledWith("/admin/memberships");

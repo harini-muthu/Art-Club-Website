@@ -41,20 +41,8 @@ describe("AboutPage", () => {
         return {
           select: vi.fn(async () => ({
             data: [
-              {
-                id: "vp",
-                name: "Avery Park",
-                role: "VP of Events",
-                focus: "Workshops",
-                email: "avery@example.edu"
-              },
-              {
-                id: "president",
-                name: "Maya Chen",
-                role: "President",
-                focus: "Club direction",
-                email: "maya@example.edu"
-              }
+              { id: "vp", name: "Avery Park", role: "VP of Events", focus: "Workshops", email: "avery@example.edu" },
+              { id: "president", name: "Maya Chen", role: "President", focus: "Club direction", email: "maya@example.edu" }
             ],
             error: null
           }))

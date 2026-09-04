@@ -84,6 +84,7 @@ describe("AdminLoginForm", () => {
         signOut: vi.fn(async () => ({ error: null }))
       },
       from: vi.fn(),
+      rpc: vi.fn(),
       storage: {
         from: vi.fn()
       }

@@ -6,7 +6,7 @@ export default defineConfig({
     environment: "jsdom",
     exclude: [...configDefaults.exclude, "github-upload-ready/**"],
     globals: true,
-    setupFiles: ["./vitest.setup.ts"]
+    setupFiles: [fileURLToPath(new URL("./vitest.setup.ts", import.meta.url))]
   },
   resolve: {
     alias: {

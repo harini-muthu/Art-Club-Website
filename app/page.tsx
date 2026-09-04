@@ -2,20 +2,17 @@ import Link from "next/link";
 import { PageSection } from "@/components/page-section";
 import {
   buildPublicEventsFromMeetings,
-  buildPublicEventsFromStaticEvents,
   getPublicEventDisplay,
   PublicEvent,
   PublicMeetingRow
 } from "@/lib/event-display";
-import { clubName, events } from "@/lib/site-data";
+import { clubName } from "@/lib/site-data";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 async function getPublicEvents() {
-  const fallbackEvents = buildPublicEventsFromStaticEvents(events);
-
   if (!hasSupabaseBrowserConfig()) {
-    return fallbackEvents;
+    return [];
   }
 
   try {
@@ -27,14 +24,11 @@ async function getPublicEvents() {
       )
       .order("meeting_date", { ascending: true });
 
-    if (error || !data?.length) {
-      return fallbackEvents;
-    }
+    if (error) return [];
 
-    const publicEvents = buildPublicEventsFromMeetings(data);
-    return publicEvents.length ? publicEvents : fallbackEvents;
+    return buildPublicEventsFromMeetings(data ?? []);
   } catch {
-    return fallbackEvents;
+    return [];
   }
 }
 

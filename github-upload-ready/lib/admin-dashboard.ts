@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import {
   AdminAttendanceRecord,
+  AdminGuest,
   AdminMeeting,
   AdminMember,
   AdminMembership,
@@ -9,10 +10,13 @@ import {
 } from "@/lib/admin-data";
 import { adminLoginRedirectUrl } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
+import { GALLERY_SUBMISSIONS_BUCKET } from "@/lib/gallery-image-storage";
 
 export type OfficerProfile = {
+  id: string;
   name: string;
   role: string;
+  email: string;
 };
 
 export function formatAdminDate(date?: string | null) {
@@ -40,7 +44,7 @@ export async function getAuthorizedOfficerProfile() {
 
   const { data: officerProfile } = await supabase
     .from("officers")
-    .select("name, role, email")
+    .select("id, name, role, email")
     .eq("email", user.email.trim().toLowerCase())
     .single();
 
@@ -56,7 +60,7 @@ export async function getOverviewData() {
   const [membersResult, membershipsResult, meetingsResult, attendanceResult] = await Promise.all([
     supabase.from("members").select("id, full_name, email, notes").order("full_name", { ascending: true }),
     supabase.from("memberships").select("id, member_id, membership_type, starts_on, expires_on, paid_amount").order("expires_on", { ascending: false }),
-    supabase.from("meetings").select("id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar").order("meeting_date", { ascending: false }),
+    supabase.from("meetings").select("id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar, attendance_count").order("meeting_date", { ascending: false }),
     supabase.from("attendance_records").select("member_id, attendee_name, checked_in_at").order("checked_in_at", { ascending: false })
   ]);
 
@@ -70,22 +74,24 @@ export async function getOverviewData() {
 
 export async function getMembershipsData() {
   const supabase = await createClient();
-  const [membersResult, membershipsResult, attendanceResult] = await Promise.all([
+  const [membersResult, membershipsResult, attendanceResult, guestsResult] = await Promise.all([
     supabase.from("members").select("id, full_name, email, notes").order("full_name", { ascending: true }),
     supabase.from("memberships").select("id, member_id, membership_type, starts_on, expires_on, paid_amount").order("expires_on", { ascending: false }),
-    supabase.from("attendance_records").select("member_id, attendee_name, checked_in_at").order("checked_in_at", { ascending: false })
+    supabase.from("attendance_records").select("member_id, guest_id, attendee_name, school_email, checked_in_at").order("checked_in_at", { ascending: false }),
+    supabase.from("guests").select("id, full_name, school_email, archived_at").order("full_name", { ascending: true })
   ]);
 
   return {
     members: (membersResult.data ?? []) as AdminMember[],
     memberships: (membershipsResult.data ?? []) as AdminMembership[],
-    attendanceRecords: (attendanceResult.data ?? []) as AdminAttendanceRecord[]
+    attendanceRecords: (attendanceResult.data ?? []) as AdminAttendanceRecord[],
+    guests: ((guestsResult.data ?? []) as AdminGuest[]).filter((guest) => !guest.archived_at)
   };
 }
 
 export async function getActivitiesData() {
   const supabase = await createClient();
-  const { data } = await supabase.from("meetings").select("id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar").order("meeting_date", { ascending: false });
+  const { data } = await supabase.from("meetings").select("id, activity, meeting_date, starts_at, ends_at, location, image_url, image_alt, show_on_calendar, attendance_count").order("meeting_date", { ascending: false });
   return (data ?? []) as AdminMeeting[];
 }
 
@@ -93,4 +99,32 @@ export async function getOfficersData() {
   const supabase = await createClient();
   const { data } = await supabase.from("officers").select("id, name, role, email, focus").order("name", { ascending: true });
   return sortOfficersForDisplay((data ?? []) as OfficerRecord[]);
+}
+
+export type AdminGallerySubmission = {
+  id: string;
+  artist_name: string;
+  school_email: string;
+  title: string;
+  class_year: string;
+  medium: string;
+  dimensions: string;
+  statement: string;
+  private_image_path: string;
+  public_image_path?: string | null;
+  public_image_url?: string | null;
+  review_status: "pending" | "approved" | "rejected" | "changes_needed";
+  review_note?: string | null;
+  created_at: string;
+};
+
+export async function getGallerySubmissionsData() {
+  const supabase = await createClient();
+  const { data } = await supabase.from<AdminGallerySubmission>("gallery_submissions")
+    .select("id, artist_name, school_email, title, class_year, medium, dimensions, statement, private_image_path, public_image_path, public_image_url, review_status, review_note, created_at")
+    .order("created_at", { ascending: false });
+  return Promise.all((data ?? []).map(async (submission) => {
+    const { data: signed } = await supabase.storage.from(GALLERY_SUBMISSIONS_BUCKET).createSignedUrl(submission.private_image_path, 900);
+    return { ...submission, reviewImageUrl: signed?.signedUrl ?? null };
+  }));
 }

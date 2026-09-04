@@ -73,7 +73,7 @@ export function AdminEntryForms({
         <form
           action={addMeetingActivity}
           className="admin-entry-form"
-          encType="multipart/form-data"
+          //encType="multipart/form-data"
         >
           <label>
             Activity

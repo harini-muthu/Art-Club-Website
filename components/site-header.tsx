@@ -11,11 +11,7 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <Link className="brand" href="/" aria-label={`${clubName} events home`}>
-        <img
-          alt={`${clubName} logo`}
-          className="brand-mark"
-          src="/PAC_logo.png"
-        />
+        <img alt={`${clubName} logo`} className="brand-mark" src="/PAC_logo.png" />
         <span>{clubName}</span>
       </Link>
       <nav className="top-tabs" aria-label="Primary navigation">

@@ -7,6 +7,7 @@ import {
   uploadEventImage
 } from "@/lib/event-image-storage";
 import {
+  getOfficerProvisioningConfig,
   getSupabaseBrowserConfig
 } from "@/lib/supabase/config";
 import {
@@ -19,8 +20,9 @@ import {
   validateMemberSubmission,
   validateMemberUpdateSubmission
 } from "@/lib/admin-entry-validation";
-import { adminLoginRedirectUrl } from "@/lib/admin-auth";
-import { createClient } from "@/lib/supabase/server";
+import { adminLoginRedirectUrl, isPresidentRole } from "@/lib/admin-auth";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { deleteGalleryPublicImage, deleteGallerySubmissionImage, publishGallerySubmissionImage } from "@/lib/gallery-image-storage";
 
 export async function signOutAdmin() {
   const supabase = await createClient();
@@ -29,9 +31,61 @@ export async function signOutAdmin() {
 }
 
 type OfficerProfile = {
+  id: string;
+  email: string;
   full_name: string;
   role: string;
 };
+
+async function provisionOfficerAuth(email: string, sharedPassword: string) {
+  try {
+    const adminSupabase = await createAdminClient();
+    const adminAuth = adminSupabase.auth.admin;
+
+    if (!adminAuth) {
+      return false;
+    }
+
+    const { error: createError } = await adminAuth.createUser({
+      email,
+      password: sharedPassword,
+      email_confirm: true
+    });
+
+    if (!createError) {
+      return true;
+    }
+
+    if (!/already registered/i.test(createError.message)) {
+      return false;
+    }
+
+    const perPage = 1000;
+    for (let page = 1; ; page += 1) {
+      const { data, error: listError } = await adminAuth.listUsers({ page, perPage });
+      if (listError) {
+        return false;
+      }
+
+      const existingUser = data.users.find(
+        (user) => user.email?.trim().toLowerCase() === email
+      );
+
+      if (existingUser) {
+        const { error: updateError } = await adminAuth.updateUserById(existingUser.id, {
+          password: sharedPassword
+        });
+        return !updateError;
+      }
+
+      if (data.users.length < perPage) {
+        return false;
+      }
+    }
+  } catch {
+    return false;
+  }
+}
 
 async function getAuthorizedAdminClient() {
   const supabase = await createClient();
@@ -51,7 +105,7 @@ async function getAuthorizedAdminClient() {
 
   const { data: officer } = await supabase
     .from("officers")
-    .select("name, role, email")
+    .select("id, name, role, email")
     .eq("email", userEmail)
     .single();
 
@@ -62,6 +116,8 @@ async function getAuthorizedAdminClient() {
   return {
     supabase,
     officerProfile: {
+      id: officer.id,
+      email: officer.email,
       full_name: officer.name,
       role: officer.role
     } as OfficerProfile
@@ -71,6 +127,8 @@ async function getAuthorizedAdminClient() {
 function redirectToAdminWithStatus(status: string): never {
   const path = status.startsWith("member-")
     ? "/admin/memberships"
+    : status.startsWith("guest-") || status.startsWith("guests-")
+      ? "/admin/memberships"
     : status.startsWith("activity-")
       ? "/admin/activities"
       : "/admin";
@@ -84,6 +142,8 @@ function redirectToAdminWithError(error: string): never {
     ? "/admin/memberships"
     : error.startsWith("activity-")
       ? "/admin/activities"
+    : error.startsWith("gallery-")
+      ? "/admin/gallery"
       : error.startsWith("officer-")
         ? "/admin/officers"
         : "/admin";
@@ -91,10 +151,34 @@ function redirectToAdminWithError(error: string): never {
   redirect(`${path}?error=${error}`);
 }
 
+function redirectToGalleryReview(status: string): never {
+  revalidatePath("/admin/gallery");
+  revalidatePath("/gallery");
+  redirect(`/admin/gallery?status=${status}`);
+}
+
 function redirectToAdminWithOfficerStatus(status: string): never {
   revalidatePath("/admin/officers");
   revalidatePath("/about");
   redirect(`/admin/officers?status=${status}`);
+}
+
+function requirePresident(role: string): void {
+  if (!isPresidentRole(role)) {
+    redirectToAdminWithError("officer-access-denied");
+  }
+}
+
+function redirectToOfficerMutationError(error: { message?: string } | null): never {
+  if (/at least one president must remain/i.test(error?.message ?? "")) {
+    redirectToAdminWithError("officer-last-president");
+  }
+
+  if (/no more than two presidents are allowed/i.test(error?.message ?? "")) {
+    redirectToAdminWithError("officer-president-limit");
+  }
+
+  redirectToAdminWithError("officer-save-failed");
 }
 
 function meetingRowFromSubmission(data: MeetingSubmission) {
@@ -128,6 +212,19 @@ export async function addMemberWithMembership(formData: FormData) {
   }
 
   const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  if (typeof supabase.rpc === "function") {
+    const { data: promotedMemberId, error: promotionError } = await supabase.rpc("promote_active_guest_by_email", {
+      email_input: validation.data.member.email ?? "",
+      notes_input: validation.data.member.notes ?? "",
+      membership_type_input: validation.data.membership.membership_type,
+      starts_on_input: validation.data.membership.starts_on,
+      expires_on_input: validation.data.membership.expires_on,
+      paid_amount_input: validation.data.membership.paid_amount,
+      added_by_input: officerProfile.full_name
+    });
+    if (promotionError) redirectToAdminWithError("member-save-failed");
+    if (promotedMemberId) redirectToAdminWithStatus("member-linked-guest");
+  }
   const { data: member, error: memberError } = await supabase
     .from<{ id: string }>("members")
     .insert(validation.data.member)
@@ -212,6 +309,33 @@ export async function deleteMember(formData: FormData) {
   redirectToAdminWithStatus("member-deleted");
 }
 
+export async function updateGuest(formData: FormData) {
+  const guestId = formData.get("guestId");
+  const fullName = formData.get("fullName");
+  const schoolEmail = formData.get("schoolEmail");
+  if (typeof guestId !== "string" || typeof fullName !== "string" || typeof schoolEmail !== "string" || !guestId || !fullName.trim() || !schoolEmail.trim()) redirectToAdminWithError("member-invalid");
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase.from("guests").update({ full_name: fullName.trim(), school_email: schoolEmail.trim().toLowerCase() }).eq("id", guestId);
+  if (error) redirectToAdminWithError("member-save-failed");
+  redirectToAdminWithStatus("guest-updated");
+}
+
+export async function archiveGuest(formData: FormData) {
+  const guestId = formData.get("guestId");
+  if (typeof guestId !== "string" || !guestId) redirectToAdminWithError("member-invalid");
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase.from("guests").update({ archived_at: new Date().toISOString() }).eq("id", guestId);
+  if (error) redirectToAdminWithError("member-save-failed");
+  redirectToAdminWithStatus("guest-archived");
+}
+
+export async function archiveGuestsForSemester() {
+  const { supabase } = await getAuthorizedAdminClient();
+  const { error } = await supabase.rpc("archive_active_guests");
+  if (error) redirectToAdminWithError("member-save-failed");
+  redirectToAdminWithStatus("guests-reset");
+}
+
 export async function addOfficer(formData: FormData) {
   const validation = validateOfficerSubmission(formData);
 
@@ -219,11 +343,29 @@ export async function addOfficer(formData: FormData) {
     redirectToAdminWithError("officer-invalid");
   }
 
-  const { supabase } = await getAuthorizedAdminClient();
+  const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  requirePresident(officerProfile.role);
+
+  let provisioningConfig;
+  try {
+    provisioningConfig = getOfficerProvisioningConfig();
+  } catch {
+    redirectToAdminWithError("officer-auth-config-missing");
+  }
+
+  const provisioned = await provisionOfficerAuth(
+    validation.data.email,
+    provisioningConfig.sharedPassword
+  );
+
+  if (!provisioned) {
+    redirectToAdminWithError("officer-auth-provision-failed");
+  }
+
   const { error } = await supabase.from("officers").insert(validation.data);
 
   if (error) {
-    redirectToAdminWithError("officer-save-failed");
+    redirectToOfficerMutationError(error);
   }
 
   redirectToAdminWithOfficerStatus("officer-added");
@@ -236,15 +378,41 @@ export async function updateOfficer(formData: FormData) {
     redirectToAdminWithError("officer-invalid");
   }
 
-  const { officer_id: officerId, ...officerRow } = validation.data;
-  const { supabase } = await getAuthorizedAdminClient();
+  const { officer_id: officerId, role, email, ...profileFields } = validation.data;
+  const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  const { data: targetOfficer } = await supabase
+    .from("officers")
+    .select("id, role, email")
+    .eq("id", officerId)
+    .single();
+
+  if (!targetOfficer || targetOfficer.email !== email) {
+    redirectToAdminWithError("officer-email-immutable");
+  }
+
+  let officerRow: typeof profileFields | (typeof profileFields & { role: string }) = {
+    ...profileFields,
+    role
+  };
+
+  if (!isPresidentRole(officerProfile.role)) {
+    if (
+      targetOfficer.id !== officerProfile.id ||
+      targetOfficer.role !== role
+    ) {
+      redirectToAdminWithError("officer-access-denied");
+    }
+
+    officerRow = profileFields;
+  }
+
   const { error } = await supabase
     .from("officers")
     .update(officerRow)
     .eq("id", officerId);
 
   if (error) {
-    redirectToAdminWithError("officer-save-failed");
+    redirectToOfficerMutationError(error);
   }
 
   redirectToAdminWithOfficerStatus("officer-updated");
@@ -257,7 +425,8 @@ export async function deleteOfficer(formData: FormData) {
     redirectToAdminWithError("officer-invalid");
   }
 
-  const { supabase } = await getAuthorizedAdminClient();
+  const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  requirePresident(officerProfile.role);
   const { count, error: countError } = await supabase
     .from("officers")
     .select("id", { count: "exact", head: true });
@@ -276,7 +445,7 @@ export async function deleteOfficer(formData: FormData) {
     .eq("id", officerId.trim());
 
   if (error) {
-    redirectToAdminWithError("officer-save-failed");
+    redirectToOfficerMutationError(error);
   }
 
   redirectToAdminWithOfficerStatus("officer-deleted");
@@ -310,6 +479,7 @@ export async function addMeetingActivity(formData: FormData) {
     redirectToAdminWithError("activity-save-failed");
   }
 
+  revalidatePath("/");
   redirectToAdminWithStatus("activity-added");
 }
 
@@ -351,6 +521,7 @@ export async function updateMeetingActivity(formData: FormData) {
     redirectToAdminWithError("activity-save-failed");
   }
 
+  revalidatePath("/");
   redirectToAdminWithStatus("activity-updated");
 }
 
@@ -381,7 +552,49 @@ export async function deleteMeetingActivity(formData: FormData) {
     redirectToAdminWithError("activity-save-failed");
   }
 
+  revalidatePath("/");
   redirectToAdminWithStatus("activity-deleted");
+}
+
+export async function reviewGallerySubmission(formData: FormData) {
+  const submissionId = formData.get("submissionId");
+  const reviewStatus = formData.get("reviewStatus");
+  const reviewNote = formData.get("reviewNote");
+  if (typeof submissionId !== "string" || !submissionId || !["approved", "rejected", "changes_needed"].includes(String(reviewStatus))) redirectToAdminWithError("gallery-invalid");
+  const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  const { data: submission } = await supabase.from<{ private_image_path: string; public_image_path: string | null; review_status: string }>("gallery_submissions").select("private_image_path, public_image_path, review_status").eq("id", submissionId).single();
+  if (!submission || submission.review_status === "approved") redirectToAdminWithError("gallery-invalid");
+
+  const update: Record<string, unknown> = { review_status: reviewStatus, review_note: typeof reviewNote === "string" ? reviewNote.trim() || null : null, reviewer_id: officerProfile.id, reviewed_at: new Date().toISOString() };
+  if (reviewStatus === "approved" && !submission.public_image_path) {
+    const published = await publishGallerySubmissionImage(supabase, submissionId, submission.private_image_path);
+    if (!published.ok) redirectToAdminWithError("gallery-publish-failed");
+    update.public_image_path = published.publicPath;
+    update.public_image_url = published.publicUrl;
+  }
+  const { data: reviewedSubmission, error } = await supabase.from("gallery_submissions").update(update).eq("id", submissionId).neq("review_status", "approved").select("id").maybeSingle();
+  if (error) {
+    if (typeof update.public_image_path === "string") await deleteGalleryPublicImage(supabase, update.public_image_path);
+    redirectToAdminWithError("gallery-save-failed");
+  }
+  if (!reviewedSubmission) {
+    if (typeof update.public_image_path === "string") await deleteGalleryPublicImage(supabase, update.public_image_path);
+    redirectToAdminWithError("gallery-invalid");
+  }
+  redirectToGalleryReview(`gallery-${reviewStatus === "changes_needed" ? "changes-needed" : reviewStatus}`);
+}
+
+export async function deleteGallerySubmission(formData: FormData) {
+  const submissionId = formData.get("submissionId");
+  if (typeof submissionId !== "string" || !submissionId) redirectToAdminWithError("gallery-invalid");
+  const { supabase } = await getAuthorizedAdminClient();
+  const { data: submission } = await supabase.from<{ private_image_path: string; public_image_path: string | null }>("gallery_submissions").select("private_image_path, public_image_path").eq("id", submissionId).single();
+  if (!submission) redirectToAdminWithError("gallery-invalid");
+  const [privateDelete, publicDelete] = await Promise.all([deleteGallerySubmissionImage(supabase, submission.private_image_path), deleteGalleryPublicImage(supabase, submission.public_image_path)]);
+  if (!privateDelete.ok || !publicDelete.ok) redirectToAdminWithError("gallery-save-failed");
+  const { error } = await supabase.from("gallery_submissions").delete().eq("id", submissionId);
+  if (error) redirectToAdminWithError("gallery-save-failed");
+  redirectToGalleryReview("gallery-deleted");
 }
 
 export async function addAttendanceRecord(formData: FormData) {

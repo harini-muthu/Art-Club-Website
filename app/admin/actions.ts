@@ -22,6 +22,7 @@ import {
 } from "@/lib/admin-entry-validation";
 import { adminLoginRedirectUrl, isPresidentRole } from "@/lib/admin-auth";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { deleteGalleryPublicImage, deleteGallerySubmissionImage, publishGallerySubmissionImage } from "@/lib/gallery-image-storage";
 
 export async function signOutAdmin() {
   const supabase = await createClient();
@@ -141,11 +142,19 @@ function redirectToAdminWithError(error: string): never {
     ? "/admin/memberships"
     : error.startsWith("activity-")
       ? "/admin/activities"
+    : error.startsWith("gallery-")
+      ? "/admin/gallery"
       : error.startsWith("officer-")
         ? "/admin/officers"
         : "/admin";
 
   redirect(`${path}?error=${error}`);
+}
+
+function redirectToGalleryReview(status: string): never {
+  revalidatePath("/admin/gallery");
+  revalidatePath("/gallery");
+  redirect(`/admin/gallery?status=${status}`);
 }
 
 function redirectToAdminWithOfficerStatus(status: string): never {
@@ -545,6 +554,47 @@ export async function deleteMeetingActivity(formData: FormData) {
 
   revalidatePath("/");
   redirectToAdminWithStatus("activity-deleted");
+}
+
+export async function reviewGallerySubmission(formData: FormData) {
+  const submissionId = formData.get("submissionId");
+  const reviewStatus = formData.get("reviewStatus");
+  const reviewNote = formData.get("reviewNote");
+  if (typeof submissionId !== "string" || !submissionId || !["approved", "rejected", "changes_needed"].includes(String(reviewStatus))) redirectToAdminWithError("gallery-invalid");
+  const { supabase, officerProfile } = await getAuthorizedAdminClient();
+  const { data: submission } = await supabase.from<{ private_image_path: string; public_image_path: string | null; review_status: string }>("gallery_submissions").select("private_image_path, public_image_path, review_status").eq("id", submissionId).single();
+  if (!submission || submission.review_status === "approved") redirectToAdminWithError("gallery-invalid");
+
+  const update: Record<string, unknown> = { review_status: reviewStatus, review_note: typeof reviewNote === "string" ? reviewNote.trim() || null : null, reviewer_id: officerProfile.id, reviewed_at: new Date().toISOString() };
+  if (reviewStatus === "approved" && !submission.public_image_path) {
+    const published = await publishGallerySubmissionImage(supabase, submissionId, submission.private_image_path);
+    if (!published.ok) redirectToAdminWithError("gallery-publish-failed");
+    update.public_image_path = published.publicPath;
+    update.public_image_url = published.publicUrl;
+  }
+  const { data: reviewedSubmission, error } = await supabase.from("gallery_submissions").update(update).eq("id", submissionId).neq("review_status", "approved").select("id").maybeSingle();
+  if (error) {
+    if (typeof update.public_image_path === "string") await deleteGalleryPublicImage(supabase, update.public_image_path);
+    redirectToAdminWithError("gallery-save-failed");
+  }
+  if (!reviewedSubmission) {
+    if (typeof update.public_image_path === "string") await deleteGalleryPublicImage(supabase, update.public_image_path);
+    redirectToAdminWithError("gallery-invalid");
+  }
+  redirectToGalleryReview(`gallery-${reviewStatus === "changes_needed" ? "changes-needed" : reviewStatus}`);
+}
+
+export async function deleteGallerySubmission(formData: FormData) {
+  const submissionId = formData.get("submissionId");
+  if (typeof submissionId !== "string" || !submissionId) redirectToAdminWithError("gallery-invalid");
+  const { supabase } = await getAuthorizedAdminClient();
+  const { data: submission } = await supabase.from<{ private_image_path: string; public_image_path: string | null }>("gallery_submissions").select("private_image_path, public_image_path").eq("id", submissionId).single();
+  if (!submission) redirectToAdminWithError("gallery-invalid");
+  const [privateDelete, publicDelete] = await Promise.all([deleteGallerySubmissionImage(supabase, submission.private_image_path), deleteGalleryPublicImage(supabase, submission.public_image_path)]);
+  if (!privateDelete.ok || !publicDelete.ok) redirectToAdminWithError("gallery-save-failed");
+  const { error } = await supabase.from("gallery_submissions").delete().eq("id", submissionId);
+  if (error) redirectToAdminWithError("gallery-save-failed");
+  redirectToGalleryReview("gallery-deleted");
 }
 
 export async function addAttendanceRecord(formData: FormData) {

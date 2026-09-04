@@ -26,12 +26,23 @@ export type AdminMeeting = {
   image_url?: string | null;
   image_alt?: string | null;
   show_on_calendar?: boolean | null;
+  attendance_count?: number | null;
 };
 
 export type AdminAttendanceRecord = {
   member_id: string | null;
+  guest_id?: string | null;
   attendee_name?: string | null;
+  school_email?: string | null;
   checked_in_at?: string | null;
+};
+
+export type AdminGuest = {
+  id: string;
+  full_name?: string | null;
+  school_email?: string | null;
+  notes?: string | null;
+  archived_at?: string | null;
 };
 
 export type OfficerRecord = {
@@ -85,9 +96,9 @@ export function filterMembersBySearch(
   });
 }
 
-function getPacificDateKey(date: Date) {
+function getEasternDateKey(date: Date) {
   const parts = new Intl.DateTimeFormat("en", {
-    timeZone: "America/Los_Angeles",
+    timeZone: "America/New_York",
     year: "numeric",
     month: "2-digit",
     day: "2-digit"
@@ -140,7 +151,7 @@ export function buildAdminDashboardStats(
   data: AdminDashboardData,
   now: Date = new Date()
 ) {
-  const today = getPacificDateKey(now);
+  const today = getEasternDateKey(now);
   const activeMemberIds = new Set(
     data.memberships
       .filter((membership) => getMembershipStatus(membership.expires_on, now) === "active")
@@ -160,7 +171,7 @@ export function buildAdminDashboardStats(
       }
 
       const checkedInAt = new Date(record.checked_in_at);
-      return !Number.isNaN(checkedInAt.valueOf()) && getPacificDateKey(checkedInAt) === today;
+      return !Number.isNaN(checkedInAt.valueOf()) && getEasternDateKey(checkedInAt) === today;
     }).length
   };
 }

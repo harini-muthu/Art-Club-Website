@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   adminLoginRedirectUrl,
-  getAdminLoginRedirectMessage
+  getAdminLoginRedirectMessage,
+  isPresidentRole
 } from "@/lib/admin-auth";
 
 describe("admin auth redirects", () => {
@@ -22,5 +23,13 @@ describe("admin auth redirects", () => {
       "Your sign-in worked, but this account is not configured as an officer."
     );
     expect(getAdminLoginRedirectMessage("unknown")).toBe("");
+  });
+
+  it("recognizes president titles without regard to case or surrounding whitespace", () => {
+    expect(isPresidentRole("President")).toBe(true);
+    expect(isPresidentRole(" president ")).toBe(true);
+    expect(isPresidentRole("PRESIDENT")).toBe(true);
+    expect(isPresidentRole("Vice President")).toBe(false);
+    expect(isPresidentRole("Co-President")).toBe(false);
   });
 });

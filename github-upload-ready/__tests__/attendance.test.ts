@@ -30,13 +30,13 @@ describe("QR attendance helpers", () => {
       })
     ).toEqual({
       status: "open",
-      activity: {
+      activities: [{
         id: "meeting-1",
         activity: "Open Studio",
         meetingDate: "2026-07-20",
         startsAt: "18:30",
         location: "Art Room"
-      }
+      }]
     });
   });
 
@@ -54,13 +54,54 @@ describe("QR attendance helpers", () => {
       ])
     ).toEqual({
       status: "open",
-      activity: {
+      activities: [{
         id: "meeting-1",
         activity: "Open Studio",
         meetingDate: "2026-07-20",
         startsAt: "18:30",
         location: "Art Room"
-      }
+      }]
+    });
+  });
+
+  it("maps every active activity returned by the attendance RPC", () => {
+    expect(
+      mapAttendanceActivityResponse([
+        {
+          status: "open",
+          meeting_id: "meeting-1",
+          activity: "Open Studio",
+          meeting_date: "2026-07-20",
+          starts_at: "18:30",
+          location: "Art Room"
+        },
+        {
+          status: "open",
+          meeting_id: "meeting-2",
+          activity: "Figure Drawing",
+          meeting_date: "2026-07-20",
+          starts_at: "19:00",
+          location: "Library"
+        }
+      ])
+    ).toEqual({
+      status: "open",
+      activities: [
+        {
+          id: "meeting-1",
+          activity: "Open Studio",
+          meetingDate: "2026-07-20",
+          startsAt: "18:30",
+          location: "Art Room"
+        },
+        {
+          id: "meeting-2",
+          activity: "Figure Drawing",
+          meetingDate: "2026-07-20",
+          startsAt: "19:00",
+          location: "Library"
+        }
+      ]
     });
   });
 
@@ -108,13 +149,13 @@ describe("QR attendance helpers", () => {
 
     await expect(getTodayAttendanceActivity({})).resolves.toEqual({
       status: "open",
-      activity: {
+      activities: [{
         id: "meeting-1",
         activity: "Open Studio",
         meetingDate: "2026-07-20",
         startsAt: "18:30",
         location: "Art Room"
-      }
+      }]
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -133,7 +174,7 @@ describe("QR attendance helpers", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
-      recordTodayAttendance({}, { attendeeName: "Maya Chen", honeypot: "" })
+      recordTodayAttendance({}, { attendeeName: "Maya Chen", schoolEmail: "maya@school.edu", meetingId: "meeting-1", honeypot: "" })
     ).resolves.toBe("checked-in");
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -141,6 +182,8 @@ describe("QR attendance helpers", () => {
       expect.objectContaining({
         body: JSON.stringify({
           attendee_name: "Maya Chen",
+          school_email: "maya@school.edu",
+          meeting_id: "meeting-1",
           honeypot: ""
         }),
         method: "POST"
@@ -157,7 +200,7 @@ describe("QR attendance helpers", () => {
       reason: "closed"
     });
     await expect(
-      recordTodayAttendance({}, { attendeeName: "Maya Chen", honeypot: "" })
+      recordTodayAttendance({}, { attendeeName: "Maya Chen", schoolEmail: "maya@school.edu", meetingId: "meeting-1", honeypot: "" })
     ).resolves.toBe("invalid");
   });
 });
